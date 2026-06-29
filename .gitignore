@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Local Environment Secrets
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env.local
+frontend/.env.local
+
+# Credentials & Sensitive Documentation (Air-gapped security)
+credentials.md
+backend/credentials.md
+AdminDetails.md
+AdminDetails.md.txt
+
+# Production builds
+frontend/build/
+
+# Logs
+*.log
+backend/*.log
+frontend/*.log
+npm-debug.log*
+
+# OS/IDE configs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

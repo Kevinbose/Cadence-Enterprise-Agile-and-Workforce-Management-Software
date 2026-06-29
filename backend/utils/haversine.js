@@ -27,4 +27,7 @@ const isWithinGeofence = (userLat, userLon, officeLat, officeLon, radiusMeters) 
   return distance <= radiusMeters;
 };
 
-module.exports = { haversineDistance, isWithinGeofence };
+// Named alias required by the attendance controller spec
+const calculateHaversineDistance = haversineDistance;
+
+module.exports = { haversineDistance, calculateHaversineDistance, isWithinGeofence };

@@ -110,8 +110,8 @@ const Profile = () => {
                     <span className="font-semibold text-xs">Team #{user?.teamId || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between border-t border-slate-200/60 pt-2">
-                    <span className="text-[#6B778C] text-xs">Reports To ID</span>
-                    <span className="font-semibold text-xs">{user?.managerId ? `User #${user.managerId}` : 'None (Executive)'}</span>
+                    <span className="text-[#6B778C] text-xs">Reports To</span>
+                    <span className="font-semibold text-xs">{user?.managerName || 'None (Executive)'}</span>
                   </div>
                 </div>
               </div>

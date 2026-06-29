@@ -14,6 +14,7 @@ const sanitizeUser = (user) => ({
   systemRole: user.systemRole,
   teamId: user.teamId,
   managerId: user.managerId,
+  managerName: user.Manager?.name || null,
 });
 
 const resolveTemporalScrumMaster = async (userId) => {
@@ -57,6 +58,13 @@ const login = async (req, res, next) => {
         sequelize.fn('LOWER', sequelize.col('email')),
         normalizedEmail
       ),
+      include: [
+        {
+          model: User,
+          as: 'Manager',
+          attributes: ['id', 'name'],
+        },
+      ],
     });
 
     if (!user) {

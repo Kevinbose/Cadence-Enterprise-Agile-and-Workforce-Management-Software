@@ -13,6 +13,7 @@ import SprintDirectory from './pages/SprintDirectory';
 import AuditDashboard from './pages/AuditDashboard';
 import ManagerHub from './pages/ManagerHub';
 import SuperAdminPortal from './pages/SuperAdmin/SuperAdminPortal';
+import Profile from './pages/Profile';
 
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
@@ -94,6 +95,15 @@ function App() {
             element={
               <ProtectedWrapper allowedRoles={['Employee', 'Admin/Manager']}>
                 <EmployeeDashboard />
+              </ProtectedWrapper>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedWrapper allowedRoles={['Employee', 'Admin/Manager', 'SuperAdmin']}>
+                <Profile />
               </ProtectedWrapper>
             }
           />

@@ -44,6 +44,11 @@ export const fetchMeRequest = async () => {
   return data;
 };
 
+export const changePasswordRequest = async (currentPassword, newPassword) => {
+  const { data } = await authApi.put('/auth/password', { currentPassword, newPassword });
+  return data;
+};
+
 export const clearAuthSession = () => {
   setAuthToken(null);
 };

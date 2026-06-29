@@ -290,7 +290,13 @@ const Layout = ({ children, pageTitle = 'Dashboard' }) => {
                     </div>
 
                     <div className="py-1">
-                      <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[#172B4D] transition-colors hover:bg-[#F4F5F7]">
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate('/profile');
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[#172B4D] transition-colors hover:bg-[#F4F5F7]"
+                      >
                         <User className="h-4 w-4 text-[#6B778C]" aria-hidden="true" />
                         My Profile
                       </button>

@@ -31,6 +31,10 @@ This repository contains two main layers:
 - Air-gapped administration system for IT Managers to provision new Manager and Employee identities.
 - Automatically generates sequential employee IDs (e.g. `YT-2026-004`) and maps direct manager hierarchies based on assigned team boundaries.
 
+### 5. Secure Profile & Credentials Console (`/profile`)
+- Unified employee details console showing Name, Role, Corporate Email, and dynamic organization reporting structures (e.g. Reports To manager's name).
+- **Self-Service Credentials Manager**: Securely updates password with robust frontend validation, authenticated bcrypt password hashing on the backend, and a double-confirmation security dialog box.
+
 ---
 
 ## 🛠️ Getting Started (Local Development)

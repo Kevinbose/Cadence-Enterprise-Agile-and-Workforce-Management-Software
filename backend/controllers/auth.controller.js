@@ -55,7 +55,7 @@ const login = async (req, res, next) => {
 
     const user = await User.findOne({
       where: sequelize.where(
-        sequelize.fn('LOWER', sequelize.col('email')),
+        sequelize.fn('LOWER', sequelize.col('User.email')),
         normalizedEmail
       ),
       include: [

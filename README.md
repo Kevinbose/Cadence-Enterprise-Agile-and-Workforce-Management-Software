@@ -14,10 +14,14 @@ This repository contains two main layers:
 - Subtask/Task/Story hierarchy with cascade completion logic: completing all subtasks auto-promotes the parent task, and completing all tasks auto-promotes the user story.
 - Scrum Master command dashboards for active sprint controls.
 
-### 2. Geofenced Attendance Logging
+### 2. Geofenced Attendance Logging & Dynamic Overrides
 - Morning clock-in audits using Haversine formula calculation.
 - Automatically locks down the system if employee attempts to check in outside the defined 100m geofence radius of Yakkay Tech HQ.
 - Regularization unlock requests for WFH anomalies.
+- **Scrum Master / Manager Overrides**: Integrated a secure override system enabling leaders (Scrum Masters and Managers) to adjudicate shift statuses to `PRESENT_OFFICE`, `WFH_APPROVED`, or `ABSENT`.
+- **Dynamic Lock/Unlock**: Real-time locking and unlocking of employee dashboards based on leader status edits (e.g., marking `ABSENT` locks out the day, while overriding back to `PRESENT_OFFICE` or `WFH_APPROVED` unlocks the shift immediately).
+- **Session Accumulator**: Automatically computes and persists currently active work hours when overrides are applied mid-session, preventing telemetry loss.
+- **Auditable Leadership Logs**: Tracks the exact identity of the adjudicating user and displays the specific leader's name (e.g., `Locked by Alan ScrumMaster`) in the employee's header status bar and Manager Hub history view.
 
 ### 3. Workforce Intelligence Cockpit
 - Real-time performance indicators: Attendance Reliability Index (ARI), First Time Pass Rate (FTPR), and goalpost-updating git-diff tamper flags.

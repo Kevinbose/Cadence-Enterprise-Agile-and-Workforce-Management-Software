@@ -96,7 +96,7 @@ const getPendingWFH = async (req, res, next) => {
 const adjudicateWFH = async (req, res, next) => {
   try {
     const { recordId } = req.params;
-    const { newStatus } = req.body;
+    const { newStatus, userId } = req.body;
     const scrumMasterTeamId = req.user.teamId;
 
     const isManager = req.user.systemRole === 'Admin/Manager';
@@ -124,43 +124,61 @@ const adjudicateWFH = async (req, res, next) => {
       });
     }
 
-    const APPROVAL_INPUTS = ['PRESENT_OFFICE', 'WFH_APPROVED'];
-    const REJECT_INPUTS = ['ABSENT'];
-
-    if (![...APPROVAL_INPUTS, ...REJECT_INPUTS].includes(newStatus)) {
+    const ALLOWED_STATUSES = ['PRESENT_OFFICE', 'WFH_APPROVED', 'ABSENT'];
+    if (!ALLOWED_STATUSES.includes(newStatus)) {
       return res.status(400).json({
         success: false,
-        message:
-          'newStatus must be WFH_APPROVED, PRESENT_OFFICE (approval), or ABSENT (rejection)',
+        message: `newStatus must be one of: ${ALLOWED_STATUSES.join(', ')}`,
       });
     }
 
-    const resolvedStatus = APPROVAL_INPUTS.includes(newStatus)
-      ? 'WFH_APPROVED'
-      : 'ABSENT';
+    let record;
+    if (recordId && recordId !== '0' && recordId !== 'null' && recordId !== 'undefined') {
+      record = await AttendanceRecord.findByPk(recordId, {
+        include: [
+          {
+            model: User,
+            as: 'Employee',
+            attributes: ['id', 'employeeId', 'name', 'email', 'teamId'],
+          },
+        ],
+      });
+    }
 
-    const record = await AttendanceRecord.findByPk(recordId, {
-      include: [
-        {
-          model: User,
-          as: 'Employee',
-          attributes: ['id', 'employeeId', 'name', 'email', 'teamId'],
-        },
-      ],
-    });
-
+    // Pre-emptive daily record lookup/creation for users who have not punched in yet
     if (!record) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found',
-      });
-    }
+      const targetUserId = userId;
+      if (!targetUserId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Record ID or target userId is required.',
+        });
+      }
 
-    if (!record.Employee) {
-      return res.status(404).json({
-        success: false,
-        message: 'Associated employee not found',
+      const employee = await User.findByPk(targetUserId, {
+        attributes: ['id', 'employeeId', 'name', 'email', 'teamId'],
       });
+
+      if (!employee) {
+        return res.status(404).json({
+          success: false,
+          message: 'Employee not found.',
+        });
+      }
+
+      const todayIST = getTodayIST();
+      const [r] = await AttendanceRecord.findOrCreate({
+        where: { userId: targetUserId, date: todayIST },
+        defaults: {
+          status: 'WFH_PENDING',
+          workHours: 0.0,
+          isActiveSession: false,
+          isStandupLocked: false,
+        },
+      });
+
+      record = r;
+      record.Employee = employee;
     }
 
     if (record.Employee.teamId !== scrumMasterTeamId) {
@@ -170,14 +188,37 @@ const adjudicateWFH = async (req, res, next) => {
       });
     }
 
-    if (record.status !== 'WFH_PENDING') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only WFH_PENDING records can be adjudicated',
-      });
+    const previousStatus = record.status;
+    
+    // Map PRESENT_OFFICE/WFH_APPROVED to WFH_APPROVED if original status was WFH_PENDING (legacy compatibility)
+    let resolvedStatus = newStatus;
+    if (record.status === 'WFH_PENDING' && (newStatus === 'PRESENT_OFFICE' || newStatus === 'WFH_APPROVED')) {
+      resolvedStatus = 'WFH_APPROVED';
     }
 
-    await record.update({ status: resolvedStatus });
+    const isAbsent = resolvedStatus === 'ABSENT';
+
+    let finalWorkHours = record.workHours;
+    let finalCheckOutTime = record.checkOutTime;
+
+    if (isAbsent) {
+      if (record.isActiveSession && record.lastResumeTime) {
+        const now = new Date();
+        const chunkMs = now.getTime() - new Date(record.lastResumeTime).getTime();
+        const chunkHours = chunkMs / (1000 * 60 * 60);
+        finalWorkHours = parseFloat((parseFloat(record.workHours || 0) + chunkHours).toFixed(2));
+        finalCheckOutTime = now;
+      }
+    }
+
+    await record.update({
+      status: resolvedStatus,
+      adjudicatedBy: req.user.id,
+      isStandupLocked: isAbsent,
+      isActiveSession: isAbsent ? false : record.isActiveSession,
+      workHours: finalWorkHours,
+      checkOutTime: finalCheckOutTime,
+    });
 
     return res.status(200).json({
       success: true,
@@ -186,7 +227,7 @@ const adjudicateWFH = async (req, res, next) => {
         recordId: record.id,
         employeeId: record.Employee.employeeId,
         employeeName: record.Employee.name,
-        previousStatus: 'WFH_PENDING',
+        previousStatus,
         newStatus: record.status,
         date: record.date,
       },

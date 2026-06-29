@@ -1,4 +1,4 @@
-const { AttendanceRecord } = require('../models');
+const { AttendanceRecord, User } = require('../models');
 const { calculateHaversineDistance } = require('../utils/haversine');
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ const getTodayIST = () =>
 // ──────────────────────────────────────────────────────────────────────────────
 const punchIn = async (req, res, next) => {
   try {
-    const { lat, lng } = req.body;
+    const { lat, lng, photoData } = req.body;
 
     if (lat === undefined || lat === null || lng === undefined || lng === null) {
       return res.status(400).json({
@@ -82,6 +82,7 @@ const punchIn = async (req, res, next) => {
       status: attendanceStatus,
       workHours: 0.0,
       isStandupLocked: false,
+      punchInPhoto: photoData || null,
     });
 
     return res.status(201).json({
@@ -232,6 +233,7 @@ const resumeShift = async (req, res, next) => {
 // ──────────────────────────────────────────────────────────────────────────────
 const punchOut = async (req, res, next) => {
   try {
+    const { photoData } = req.body;
     const todayIST = getTodayIST();
 
     const record = await AttendanceRecord.findOne({
@@ -268,6 +270,7 @@ const punchOut = async (req, res, next) => {
       checkOutTime: now,
       isActiveSession: false,
       isStandupLocked: true,
+      punchOutPhoto: photoData || null,
     });
 
     await record.reload();
@@ -294,6 +297,13 @@ const getTodayStatus = async (req, res, next) => {
 
     const record = await AttendanceRecord.findOne({
       where: { userId: req.user.id, date: todayIST },
+      include: [
+        {
+          model: User,
+          as: 'Adjudicator',
+          attributes: ['id', 'name', 'systemRole'],
+        },
+      ],
     });
 
     // Check for ANY past shift that was swept and has no justification reason yet

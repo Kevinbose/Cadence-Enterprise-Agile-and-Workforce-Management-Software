@@ -202,6 +202,30 @@ const getEmployeeDossier = async (req, res, next) => {
       { replacements: { uid }, type: QueryTypes.SELECT }
     );
 
+    /* ── 3.5. Attendance History (biometric verify records) ────────────────── */
+    const attendanceHistory = await sequelize.query(
+      `
+      SELECT
+        ar.id,
+        ar.date,
+        ar.status,
+        ar.work_hours        AS workHours,
+        ar.system_auto_closed AS systemAutoClosed,
+        ar.regularization_reason AS regularizationReason,
+        ar.created_at        AS createdAt,
+        ar.punch_in_photo    AS punchInPhoto,
+        ar.punch_out_photo   AS punchOutPhoto,
+        ar.adjudicated_by    AS adjudicatedBy,
+        u.name               AS adjudicatorName
+      FROM  attendance_records ar
+      LEFT JOIN users u ON ar.adjudicated_by = u.id
+      WHERE ar.user_id = :uid
+      ORDER BY ar.date DESC
+      LIMIT 60
+      `,
+      { replacements: { uid }, type: QueryTypes.SELECT }
+    );
+
     /* ── 4. Summary KPIs (same formula as workforce grid) ────────────── */
     const [kpiRow] = await sequelize.query(
       `
@@ -293,6 +317,7 @@ const getEmployeeDossier = async (req, res, next) => {
       kpis,
       auditDiffs,
       anomalies,
+      attendanceHistory,
       previousComments,
     });
   } catch (error) {

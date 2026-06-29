@@ -145,6 +145,37 @@ const runITProvisioningMigration = async () => {
   }
 };
 
+const runBiometricPhotosMigration = async () => {
+  try {
+    const [cols] = await sequelize.query(
+      "SHOW COLUMNS FROM attendance_records LIKE 'punch_in_photo'"
+    );
+    if (cols.length === 0) {
+      await sequelize.query('ALTER TABLE attendance_records ADD COLUMN punch_in_photo LONGTEXT NULL');
+      await sequelize.query('ALTER TABLE attendance_records ADD COLUMN punch_out_photo LONGTEXT NULL');
+      console.log('🔧 Biometric Attendance migration: punch_in_photo and punch_out_photo columns added.');
+    }
+    console.log('✅ Biometric Attendance migration complete.');
+  } catch (err) {
+    console.error('❌ Biometric Attendance migration failed:', err.message);
+  }
+};
+
+const runAdjudicationAuditMigration = async () => {
+  try {
+    const [cols] = await sequelize.query(
+      "SHOW COLUMNS FROM attendance_records LIKE 'adjudicated_by'"
+    );
+    if (cols.length === 0) {
+      await sequelize.query('ALTER TABLE attendance_records ADD COLUMN adjudicated_by INT NULL');
+      console.log('🔧 Adjudication Audit migration: adjudicated_by column added.');
+    }
+    console.log('✅ Adjudication Audit migration complete.');
+  } catch (err) {
+    console.error('❌ Adjudication Audit migration failed:', err.message);
+  }
+};
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();
@@ -152,6 +183,8 @@ const startServer = async () => {
 
     await runTeamIsolationMigration();
     await runITProvisioningMigration();
+    await runBiometricPhotosMigration();
+    await runAdjudicationAuditMigration();
 
     app.listen(PORT, () => {
       console.log(

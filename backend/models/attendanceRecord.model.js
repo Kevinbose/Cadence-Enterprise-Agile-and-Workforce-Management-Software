@@ -116,6 +116,24 @@ const AttendanceRecord = sequelize.define(
       field: 'is_standup_locked',
       comment: 'True after End Day — permanently seals the ledger for today',
     },
+    punchInPhoto: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+      field: 'punch_in_photo',
+      comment: 'Base64 image snapshot captured during morning punch-in',
+    },
+    punchOutPhoto: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+      field: 'punch_out_photo',
+      comment: 'Base64 image snapshot captured during end day punch-out',
+    },
+    adjudicatedBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'adjudicated_by',
+      comment: 'User ID of the SM or Manager who adjudicated/overrode this attendance status',
+    },
   },
   {
     tableName: 'attendance_records',

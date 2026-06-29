@@ -23,8 +23,8 @@ attendanceApi.interceptors.request.use(
 // ── API Functions ─────────────────────────────────────────────────────────────
 
 /** POST /api/v1/attendance/punch-in */
-export const punchInRequest = async (lat, lng) => {
-  const { data } = await attendanceApi.post('/attendance/punch-in', { lat, lng });
+export const punchInRequest = async (lat, lng, photoData) => {
+  const { data } = await attendanceApi.post('/attendance/punch-in', { lat, lng, photoData });
   return data;
 };
 
@@ -41,8 +41,8 @@ export const resumeShiftRequest = async () => {
 };
 
 /** PUT /api/v1/attendance/punch-out (End Day Completely) */
-export const punchOutRequest = async () => {
-  const { data } = await attendanceApi.put('/attendance/punch-out');
+export const punchOutRequest = async (photoData) => {
+  const { data } = await attendanceApi.put('/attendance/punch-out', { photoData });
   return data;
 };
 

@@ -22,6 +22,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Calendar,
+  ShieldCheck,
 } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 import {
@@ -135,16 +136,133 @@ const DiffEntry = ({ entry }) => {
   );
 };
 
+/* ── Timesheet Row with Inline Collapsible Biometrics ─────────────────────── */
+const AnomalyRow = ({ a }) => {
+  const [showPhotos, setShowPhotos] = useState(false);
+
+  return (
+    <div
+      className="flex flex-col gap-2 rounded-xl border border-slate-200/60 bg-[#FAFBFC] p-3.5 hover:bg-slate-50 transition-colors"
+    >
+      <div className="flex items-start gap-3.5">
+        <div className={`rounded-xl p-2 mt-0.5 ${a.systemAutoClosed ? 'bg-amber-100 text-amber-600' :
+          a.status === 'ABSENT' ? 'bg-rose-100 text-rose-600' :
+            'bg-emerald-100 text-emerald-600'
+          }`}>
+          {a.systemAutoClosed || a.status === 'ABSENT' ? (
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          ) : (
+            <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#172B4D]">
+              {new Date(a.date).toLocaleDateString('en-IN', {
+                day: '2-digit', month: 'short', year: 'numeric',
+              })}
+            </span>
+            <span
+              className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${a.status === 'ABSENT'
+                ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                : a.systemAutoClosed
+                  ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                  : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                }`}
+            >
+              {a.systemAutoClosed ? 'AUTO-CLOSED BY SWEEP' : a.status}
+            </span>
+
+            {(a.punchInPhoto || a.punchOutPhoto) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPhotos(!showPhotos);
+                }}
+                onMouseEnter={() => setShowPhotos(true)}
+                onMouseLeave={() => setShowPhotos(false)}
+                className="inline-flex items-center gap-1 rounded bg-[#EAE6FF] text-[#5243AA] border border-[#C0B6F2] hover:bg-[#DED9FA] px-2 py-0.5 text-[9px] font-extrabold uppercase transition-colors shadow-sm cursor-pointer ml-2"
+              >
+                <span>📸 Verified</span>
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-[#6B778C] font-medium leading-relaxed">
+            {Number(a.workHours).toFixed(1)} hrs recorded.
+            {a.adjudicatorName && (
+              <span className="block mt-0.5 text-[#0747A6] font-bold text-[10px]">
+                🛡 Adjudicated by: {a.adjudicatorName}
+              </span>
+            )}
+            {a.systemAutoClosed ? (
+              a.regularizationReason ? (
+                <span className="block mt-1 bg-white p-2 rounded border border-slate-100 text-[#42526E] italic">
+                  "{a.regularizationReason}"
+                </span>
+              ) : (
+                <span className="block mt-0.5 text-rose-500 font-semibold text-[10px]">
+                  ⚠ Failed to close workspace shift before midnight.
+                </span>
+              )
+            ) : null}
+          </p>
+        </div>
+      </div>
+
+      {showPhotos && (a.punchInPhoto || a.punchOutPhoto) && (
+        <div className="mt-2.5 ml-[42px] border-t border-slate-100 pt-2.5 max-w-sm">
+          <div className="text-[9px] font-extrabold uppercase tracking-widest text-[#8993A4] mb-2 flex items-center gap-1">
+            <ShieldCheck className="h-3 w-3 text-emerald-600" />
+            Biometric Gate Record
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center">
+            {a.punchInPhoto ? (
+              <div>
+                <img
+                  src={a.punchInPhoto}
+                  alt="Punch In Biometric"
+                  className="w-full aspect-[4/3] rounded-lg border border-slate-200 object-cover shadow-sm bg-slate-950"
+                />
+                <span className="text-[8px] font-bold text-[#6B778C] uppercase tracking-wider mt-1 block">In Capture</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center aspect-[4/3] rounded-lg border border-slate-200 bg-slate-50 text-[8px] text-[#6B778C]">
+                No In Photo
+              </div>
+            )}
+
+            {a.punchOutPhoto ? (
+              <div>
+                <img
+                  src={a.punchOutPhoto}
+                  alt="Punch Out Biometric"
+                  className="w-full aspect-[4/3] rounded-lg border border-slate-200 object-cover shadow-sm bg-slate-950"
+                />
+                <span className="text-[8px] font-bold text-[#6B778C] uppercase tracking-wider mt-1 block">Out Capture</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center aspect-[4/3] rounded-lg border border-slate-200 bg-slate-50 text-[8px] text-[#6B778C]">
+                No Out Photo
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── Employee Dossier Slide-over Drawer with gauge overlays ────────────── */
 const DossierDrawer = ({ onClose }) => {
   const { selectedDossier, isDossierLoading } = useSelector((s) => s.intelligence);
 
   if (!selectedDossier && !isDossierLoading) return null;
 
-  const emp    = selectedDossier?.employee;
-  const kpis   = selectedDossier?.kpis   || {};
-  const diffs  = selectedDossier?.auditDiffs || [];
+  const emp = selectedDossier?.employee;
+  const kpis = selectedDossier?.kpis || {};
+  const diffs = selectedDossier?.auditDiffs || [];
   const anomalies = selectedDossier?.anomalies || [];
+  const attendanceHistory = selectedDossier?.attendanceHistory || [];
 
   return (
     <div className="fixed inset-0 z-50 flex overflow-hidden" aria-modal="true">
@@ -271,11 +389,10 @@ const DossierDrawer = ({ onClose }) => {
                             })}
                           </span>
                           <span
-                            className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                              a.status === 'ABSENT'
-                                ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                                : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                            }`}
+                            className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${a.status === 'ABSENT'
+                              ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                              : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                              }`}
                           >
                             {a.systemAutoClosed ? 'AUTO-CLOSED BY SWEEP' : a.status}
                           </span>
@@ -294,6 +411,25 @@ const DossierDrawer = ({ onClose }) => {
                         </p>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Attendance Section with Biometrics */}
+            <section className="border-t border-slate-100 pt-6">
+              <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-[#6B778C] mb-3.5 flex items-center gap-1.5">
+                <Fingerprint className="h-4 w-4 text-[#0052CC]" />
+                Attendance ({attendanceHistory.length})
+              </h3>
+              {attendanceHistory.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#DFE1E6] bg-slate-50/40 p-6 text-center text-xs text-[#6B778C] font-medium">
+                  No attendance history logs found.
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
+                  {attendanceHistory.map((a) => (
+                    <AnomalyRow key={a.id} a={a} />
                   ))}
                 </div>
               )}
@@ -319,7 +455,7 @@ const DossierDrawer = ({ onClose }) => {
                       return groups;
                     }, {})
                   ).map(([sprintName, sprintComments]) => (
-                    <details 
+                    <details
                       key={sprintName}
                       className="group/details rounded-2xl border border-slate-200/50 bg-[#FAFBFC] overflow-hidden transition-all duration-300 shadow-sm"
                     >
@@ -338,7 +474,7 @@ const DossierDrawer = ({ onClose }) => {
                       <div className="border-t border-slate-200/40 bg-white p-4.5 space-y-4 max-h-80 overflow-y-auto scrollbar-thin">
                         {sprintComments.map((c) => {
                           const isPositive = c.evaluationTier === 'Positive';
-                          
+
                           // Dynamically build path to avoid trailing arrows
                           const lineagePath = [];
                           if (c.hierarchy?.epic) lineagePath.push({ ...c.hierarchy.epic, style: 'bg-[#EAE6FF] text-[#5243AA] border-[#5243AA]/10' });
@@ -347,13 +483,12 @@ const DossierDrawer = ({ onClose }) => {
                           if (c.hierarchy?.subtask) lineagePath.push({ ...c.hierarchy.subtask, style: 'bg-[#F4F5F7] text-[#42526E] border-[#42526E]/10' });
 
                           return (
-                            <div 
-                              key={c.id} 
-                              className={`rounded-2xl border p-4 text-xs transition-all shadow-sm ${
-                                isPositive 
-                                  ? 'bg-gradient-to-br from-emerald-500/[0.01] to-emerald-500/[0.03] border-emerald-200/50' 
-                                  : 'bg-gradient-to-br from-rose-500/[0.01] to-rose-500/[0.03] border-rose-200/50'
-                              }`}
+                            <div
+                              key={c.id}
+                              className={`rounded-2xl border p-4 text-xs transition-all shadow-sm ${isPositive
+                                ? 'bg-gradient-to-br from-emerald-500/[0.01] to-emerald-500/[0.03] border-emerald-200/50'
+                                : 'bg-gradient-to-br from-rose-500/[0.01] to-rose-500/[0.03] border-rose-200/50'
+                                }`}
                             >
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
@@ -388,7 +523,7 @@ const DossierDrawer = ({ onClose }) => {
                                     {lineagePath.map((item, idx) => (
                                       <React.Fragment key={item.id}>
                                         {idx > 0 && <span className="text-slate-300 font-bold text-xs">➔</span>}
-                                        <span 
+                                        <span
                                           className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold shadow-sm ${item.style}`}
                                           title={`${item.type}: ${item.title}`}
                                         >
@@ -418,9 +553,9 @@ const DossierDrawer = ({ onClose }) => {
 /* ── Anomaly Ticker item ── */
 const TickerItem = ({ event }) => {
   const config = {
-    LOW_SCORE:  { icon: TrendingDown, colour: 'text-rose-500 border-rose-500/20 bg-rose-500/[0.04]', pulse: 'bg-rose-500' },
-    TAMPER:     { icon: AlertTriangle, colour: 'text-amber-500 border-amber-500/20 bg-amber-500/[0.04]', pulse: 'bg-amber-500' },
-    ATTENDANCE: { icon: Clock,         colour: 'text-blue-500 border-blue-500/20 bg-blue-500/[0.04]', pulse: 'bg-blue-500' },
+    LOW_SCORE: { icon: TrendingDown, colour: 'text-rose-500 border-rose-500/20 bg-rose-500/[0.04]', pulse: 'bg-rose-500' },
+    TAMPER: { icon: AlertTriangle, colour: 'text-amber-500 border-amber-500/20 bg-amber-500/[0.04]', pulse: 'bg-amber-500' },
+    ATTENDANCE: { icon: Clock, colour: 'text-blue-500 border-blue-500/20 bg-blue-500/[0.04]', pulse: 'bg-blue-500' },
   }[event.type] || { icon: Activity, colour: 'text-slate-500 border-slate-200 bg-slate-50/50', pulse: 'bg-slate-400' };
 
   const Icon = config.icon;
@@ -456,8 +591,8 @@ const ManagerHub = () => {
   const { workforce, tickerFeed, isLoading, selectedDossier, error } =
     useSelector((s) => s.intelligence);
 
-  const [search, setSearch]           = useState('');
-  const [filter, setFilter]           = useState('all');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
   const [selectedUserId, setSelectedUserId] = useState(null);
   const tickerRef = useRef(null);
 
@@ -487,7 +622,7 @@ const ManagerHub = () => {
         (e) => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q)
       );
     }
-    if (filter === 'risk')  list = list.filter((e) => e.trustScore < 75);
+    if (filter === 'risk') list = list.filter((e) => e.trustScore < 75);
     if (filter === 'elite') list = list.filter((e) => e.trustScore >= 90);
     return list;
   }, [workforce, search, filter]);
@@ -513,10 +648,10 @@ const ManagerHub = () => {
       )}
 
       <div className="flex flex-col xl:flex-row gap-6 h-full min-h-0 px-2 pb-4">
-        
+
         {/* ── LEFT PANE: Master Workforce Grid (75%) ────────────────────── */}
         <div className="flex-1 min-w-0 flex flex-col gap-5">
-          
+
           {/* Header Dashboard section */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -553,24 +688,22 @@ const ManagerHub = () => {
           {/* filter chips */}
           <div className="flex gap-2">
             {[
-              { key: 'all',   label: 'All Employees', count: workforce.length, icon: Users },
-              { key: 'risk',  label: 'High Risk Level (<75)', count: workforce.filter((e) => e.trustScore < 75).length, icon: AlertTriangle },
+              { key: 'all', label: 'All Employees', count: workforce.length, icon: Users },
+              { key: 'risk', label: 'High Risk Level (<75)', count: workforce.filter((e) => e.trustScore < 75).length, icon: AlertTriangle },
               { key: 'elite', label: 'Elite Performers (≥90)', count: workforce.filter((e) => e.trustScore >= 90).length, icon: Award },
             ].map(({ key, label, count, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border hover:scale-[1.01] active:scale-[0.98] ${
-                  filter === key
-                    ? 'bg-gradient-to-r from-[#0747A6] to-[#0A89CD] text-white border-transparent shadow-md shadow-blue-500/10'
-                    : 'bg-white text-[#42526E] border-[#DFE1E6]/70 hover:border-[#0A89CD] hover:text-[#0A89CD]'
-                }`}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border hover:scale-[1.01] active:scale-[0.98] ${filter === key
+                  ? 'bg-gradient-to-r from-[#0747A6] to-[#0A89CD] text-white border-transparent shadow-md shadow-blue-500/10'
+                  : 'bg-white text-[#42526E] border-[#DFE1E6]/70 hover:border-[#0A89CD] hover:text-[#0A89CD]'
+                  }`}
               >
                 <Icon className="h-3.5 w-3.5 opacity-80" />
                 {label}
-                <span className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                  filter === key ? 'bg-white/20 text-white' : 'bg-slate-100 text-[#42526E]'
-                }`}>
+                <span className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${filter === key ? 'bg-white/20 text-white' : 'bg-slate-100 text-[#42526E]'
+                  }`}>
                   {count}
                 </span>
               </button>
@@ -620,9 +753,8 @@ const ManagerHub = () => {
                       <tr
                         key={emp.id}
                         onClick={() => handleRowClick(emp)}
-                        className={`group cursor-pointer transition-all duration-200 hover:bg-[#DEEBFF]/30 ${
-                          selectedUserId === emp.id ? 'bg-[#DEEBFF]/50' : ''
-                        }`}
+                        className={`group cursor-pointer transition-all duration-200 hover:bg-[#DEEBFF]/30 ${selectedUserId === emp.id ? 'bg-[#DEEBFF]/50' : ''
+                          }`}
                       >
                         {/* Profile Details */}
                         <td className="px-5 py-4">

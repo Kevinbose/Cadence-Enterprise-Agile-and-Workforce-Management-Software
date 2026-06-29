@@ -7,6 +7,7 @@ import {
   fetchTodayStatus,
 } from '../../features/attendance/attendanceSlice';
 import ShiftActionModal from './ShiftActionModal';
+import BiometricCaptureModal from '../modals/BiometricCaptureModal';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Helper: Format total elapsed seconds into "04h : 12m : 08s"
@@ -28,6 +29,8 @@ const GlobalHeaderPunch = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGpsQuerying, setIsGpsQuerying] = useState(false);
   const [gpsError, setGpsError] = useState(null);
+  const [pendingCoords, setPendingCoords] = useState(null);
+  const [isBiometricOpen, setIsBiometricOpen] = useState(false);
 
   // ── Rehydration on mount (Page Refresh Amnesia fix) ─────────────────────
   useEffect(() => {
@@ -70,9 +73,8 @@ const GlobalHeaderPunch = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setIsGpsQuerying(false);
-        dispatch(
-          punchInUser({ lat: position.coords.latitude, lng: position.coords.longitude })
-        );
+        setPendingCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setIsBiometricOpen(true);
       },
       (geolocationError) => {
         setIsGpsQuerying(false);
@@ -209,8 +211,27 @@ const GlobalHeaderPunch = () => {
     </div>
   );
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // STATE 5: ABSENT locked → Red badge with alert
+  // ──────────────────────────────────────────────────────────────────────────
+  const renderAbsentLocked = () => {
+    const leaderName = todayRecord?.Adjudicator?.name || 'Leader';
+    return (
+      <div
+        aria-label="Absent locked"
+        className="flex items-center gap-2 rounded-md bg-[#FFEBE6] border border-[#FFBDAD] px-5 py-2 text-sm font-semibold text-[#BF2600] cursor-default"
+      >
+        <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+        <span>
+          Attendance: ABSENT (Locked by {leaderName})
+        </span>
+      </div>
+    );
+  };
+
   // ── Render decision ───────────────────────────────────────────────────
   const renderWidget = () => {
+    if (todayRecord && todayRecord.status === 'ABSENT') return renderAbsentLocked();
     if (!todayRecord) return renderNoRecord();
     if (todayRecord.isStandupLocked) return renderSealedDay();
     if (todayRecord.isActiveSession) return renderActiveSession();
@@ -256,6 +277,22 @@ const GlobalHeaderPunch = () => {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+
+      {/* ── Biometric Capture Modal for Punch In ───────────────────────────── */}
+      <BiometricCaptureModal
+        isOpen={isBiometricOpen}
+        onClose={() => {
+          setIsBiometricOpen(false);
+          setPendingCoords(null);
+        }}
+        onSuccess={(photo) => {
+          setIsBiometricOpen(false);
+          if (pendingCoords) {
+            dispatch(punchInUser({ ...pendingCoords, photoData: photo }));
+          }
+          setPendingCoords(null);
+        }}
+      />
     </>
   );
 };

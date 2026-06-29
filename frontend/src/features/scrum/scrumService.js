@@ -24,9 +24,10 @@ export const getWfhQueueRequest = async () => {
   return data;
 };
 
-export const adjudicateWfhRequest = async (recordId, newStatus) => {
+export const adjudicateWfhRequest = async (recordId, newStatus, userId) => {
   const { data } = await scrumApi.patch(`/scrum/adjudicate/${recordId}`, {
     newStatus,
+    userId,
   });
   return data;
 };

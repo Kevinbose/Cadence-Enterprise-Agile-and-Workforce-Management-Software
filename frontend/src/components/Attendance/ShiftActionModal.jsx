@@ -6,6 +6,7 @@ import {
   punchOutUser,
   clearAttendanceError,
 } from '../../features/attendance/attendanceSlice';
+import BiometricCaptureModal from '../modals/BiometricCaptureModal';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Helper: live accumulated hours = stored workHours + current chunk
@@ -26,6 +27,7 @@ const ShiftActionModal = ({ todayRecord, onClose }) => {
   const { user } = useSelector((state) => state.auth);
 
   const [liveHours, setLiveHours] = useState(calcLiveHours(todayRecord));
+  const [isBiometricOpen, setIsBiometricOpen] = useState(false);
 
   // Clear stale errors on mount
   useEffect(() => {
@@ -62,8 +64,8 @@ const ShiftActionModal = ({ todayRecord, onClose }) => {
   }, [dispatch]);
 
   const handleEndDay = useCallback(() => {
-    dispatch(punchOutUser());
-  }, [dispatch]);
+    setIsBiometricOpen(true);
+  }, []);
 
   const isOffice = todayRecord?.status === 'PRESENT_OFFICE';
 
@@ -232,6 +234,16 @@ const ShiftActionModal = ({ todayRecord, onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* ── Biometric Capture Modal for Punch Out ───────────────────────────── */}
+      <BiometricCaptureModal
+        isOpen={isBiometricOpen}
+        onClose={() => setIsBiometricOpen(false)}
+        onSuccess={(photo) => {
+          setIsBiometricOpen(false);
+          dispatch(punchOutUser({ photoData: photo }));
+        }}
+      />
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { ShieldAlert, Users, Award, ShieldCheck, HelpCircle, Lock, Play } from 'lucide-react';
+import { adjudicateWfh } from '../../features/scrum/scrumSlice';
 
 const StandupTrackerGrid = () => {
+  const dispatch = useDispatch();
   const { teamMatrix, summary, isLoading } = useSelector((state) => state.scrum);
 
   // Status badge styles mapping
@@ -155,6 +157,30 @@ const StandupTrackerGrid = () => {
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* SM Override Action */}
+              <div className="mt-4 pt-3 border-t border-[#F4F5F7] flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold text-[#6B778C] uppercase tracking-wider">SM Override</span>
+                <select
+                  value={member.todayStatus}
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    dispatch(
+                      adjudicateWfh({
+                        recordId: member.attendance?.id || '0',
+                        newStatus: nextVal,
+                        userId: member.userId,
+                      })
+                    );
+                  }}
+                  className="rounded-md border border-[#DFE1E6] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#172B4D] hover:bg-[#FAFBFC] focus:outline-none transition-colors cursor-pointer"
+                >
+                  <option value="PRESENT_OFFICE">PRESENT OFFICE</option>
+                  <option value="WFH_APPROVED">WFH APPROVED</option>
+                  <option value="WFH_PENDING">WFH PENDING</option>
+                  <option value="ABSENT">ABSENT</option>
+                </select>
               </div>
 
               {/* Blockers alert banner */}

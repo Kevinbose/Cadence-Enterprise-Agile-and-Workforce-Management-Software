@@ -90,6 +90,10 @@ AttendanceRecord.belongsTo(User, {
   foreignKey: 'userId',
   as: 'Employee',
 });
+AttendanceRecord.belongsTo(User, {
+  foreignKey: 'adjudicatedBy',
+  as: 'Adjudicator',
+});
 
 module.exports = {
   sequelize,

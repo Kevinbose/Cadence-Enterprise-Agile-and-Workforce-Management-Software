@@ -39,9 +39,9 @@ export const fetchWfhQueue = createAsyncThunk(
 
 export const adjudicateWfh = createAsyncThunk(
   'scrum/adjudicateWfh',
-  async ({ recordId, newStatus }, thunkAPI) => {
+  async ({ recordId, newStatus, userId }, thunkAPI) => {
     try {
-      const response = await adjudicateWfhRequest(recordId, newStatus);
+      const response = await adjudicateWfhRequest(recordId, newStatus, userId);
       if (!response.success) {
         return thunkAPI.rejectWithValue(
           response.message || 'Failed to adjudicate WFH request'
@@ -121,9 +121,13 @@ const scrumSlice = createSlice({
         if (matrixIndex !== -1) {
           state.teamMatrix[matrixIndex].todayStatus =
             action.payload.record.newStatus;
+          state.teamMatrix[matrixIndex].isStandupLocked =
+            action.payload.record.newStatus === 'ABSENT' || state.teamMatrix[matrixIndex].isStandupLocked;
           if (state.teamMatrix[matrixIndex].attendance) {
             state.teamMatrix[matrixIndex].attendance.status =
               action.payload.record.newStatus;
+            state.teamMatrix[matrixIndex].attendance.isStandupLocked =
+              action.payload.record.newStatus === 'ABSENT' || state.teamMatrix[matrixIndex].attendance.isStandupLocked;
           }
         }
       })

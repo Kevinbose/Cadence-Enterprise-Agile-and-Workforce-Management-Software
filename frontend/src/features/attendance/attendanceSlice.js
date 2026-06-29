@@ -24,9 +24,9 @@ const initialState = {
 /** Morning GPS punch-in */
 export const punchInUser = createAsyncThunk(
   'attendance/punchIn',
-  async ({ lat, lng }, thunkAPI) => {
+  async ({ lat, lng, photoData }, thunkAPI) => {
     try {
-      const response = await punchInRequest(lat, lng);
+      const response = await punchInRequest(lat, lng, photoData);
       if (!response.success) return thunkAPI.rejectWithValue(response.message);
       return response.record;
     } catch (error) {
@@ -72,9 +72,10 @@ export const resumeShiftUser = createAsyncThunk(
 /** End Day Completely — seal the ledger */
 export const punchOutUser = createAsyncThunk(
   'attendance/punchOut',
-  async (_, thunkAPI) => {
+  async (payload, thunkAPI) => {
     try {
-      const response = await punchOutRequest();
+      const photoData = payload?.photoData;
+      const response = await punchOutRequest(photoData);
       if (!response.success) return thunkAPI.rejectWithValue(response.message);
       return response.record;
     } catch (error) {

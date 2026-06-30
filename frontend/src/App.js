@@ -140,7 +140,7 @@ function App() {
           <Route
             path="/audits"
             element={
-              <ProtectedWrapper allowedRoles={['Admin/Manager', 'Employee']}>
+              <ProtectedWrapper allowedRoles={['Admin/Manager', 'Employee']} requireScrumMaster>
                 <AuditDashboard />
               </ProtectedWrapper>
             }
@@ -149,7 +149,7 @@ function App() {
           <Route
             path="/scrum-master"
             element={
-              <ProtectedWrapper allowedRoles={['Admin/Manager', 'Employee']}>
+              <ProtectedWrapper allowedRoles={['Admin/Manager', 'Employee']} requireScrumMaster>
                 <ScrumMasterDashboard />
               </ProtectedWrapper>
             }

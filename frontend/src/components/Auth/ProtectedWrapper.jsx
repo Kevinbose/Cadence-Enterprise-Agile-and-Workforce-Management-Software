@@ -28,7 +28,7 @@ const AccessDenied = () => (
   </div>
 );
 
-const ProtectedWrapper = ({ children, allowedRoles = null }) => {
+const ProtectedWrapper = ({ children, allowedRoles = null, requireScrumMaster = false }) => {
   const { isAuthenticated, isLoading, user } = useSelector((state) => state.auth);
 
   if (isLoading) {
@@ -43,6 +43,14 @@ const ProtectedWrapper = ({ children, allowedRoles = null }) => {
     Array.isArray(allowedRoles) &&
     allowedRoles.length > 0 &&
     !allowedRoles.includes(user.systemRole)
+  ) {
+    return <AccessDenied />;
+  }
+
+  if (
+    requireScrumMaster &&
+    user.systemRole !== 'Admin/Manager' &&
+    !user.isTemporalScrumMaster
   ) {
     return <AccessDenied />;
   }

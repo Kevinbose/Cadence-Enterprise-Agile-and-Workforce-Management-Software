@@ -6,6 +6,7 @@ import scrumReducer from '../features/scrum/scrumSlice';
 import sprintReducer from '../features/sprints/sprintSlice';
 import auditReducer from '../features/audits/auditSlice';
 import intelligenceReducer from '../features/intelligence/intelligenceSlice';
+import tempManagerReducer from '../features/tempManager/tempManagerSlice';
 
 const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ const store = configureStore({
     sprint: sprintReducer,
     audit: auditReducer,
     intelligence: intelligenceReducer,
+    tempManager: tempManagerReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

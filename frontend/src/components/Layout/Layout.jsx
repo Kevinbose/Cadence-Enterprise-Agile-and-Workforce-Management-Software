@@ -13,6 +13,7 @@ import {
   GitCommitHorizontal,
   Menu,
   ChevronLeft,
+  UserCog,
 } from 'lucide-react';
 import GlobalHeaderPunch from '../Attendance/GlobalHeaderPunch';
 import RegularizationModal from '../Attendance/RegularizationModal';
@@ -68,6 +69,8 @@ const Layout = ({ children, pageTitle = 'Dashboard' }) => {
   const showScrumMasterNav =
     user?.systemRole === 'Admin/Manager' || user?.isTemporalScrumMaster === true;
   const showManagerNav = user?.systemRole === 'Admin/Manager';
+  const showTempManagerNav =
+    user?.systemRole === 'Admin/Manager' && user?.isTempManager !== true;
   const showAuditNav =
     user?.systemRole === 'Admin/Manager' || user?.isTemporalScrumMaster === true;
 
@@ -210,6 +213,22 @@ const Layout = ({ children, pageTitle = 'Dashboard' }) => {
               {isCollapsed && (
                 <span className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-md bg-[#172B4D] px-2 py-1 text-xs font-medium text-white shadow-lg group-hover:block z-50">
                   Manager Hub
+                </span>
+              )}
+            </NavLink>
+          )}
+
+          {showTempManagerNav && (
+            <NavLink
+              to="/temp-manager-portal"
+              className={({ isActive }) => sidebarLinkClass(isActive, isCollapsed)}
+              title={isCollapsed ? 'Temp Manager' : undefined}
+            >
+              <UserCog className="h-4 w-4 flex-shrink-0" />
+              {!isCollapsed && <span className="truncate">Temp Manager</span>}
+              {isCollapsed && (
+                <span className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-md bg-[#172B4D] px-2 py-1 text-xs font-medium text-white shadow-lg group-hover:block z-50">
+                  Temp Manager
                 </span>
               )}
             </NavLink>

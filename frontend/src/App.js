@@ -12,6 +12,7 @@ import KanbanBoard from './pages/KanbanBoard';
 import SprintDirectory from './pages/SprintDirectory';
 import AuditDashboard from './pages/AuditDashboard';
 import ManagerHub from './pages/ManagerHub';
+import TempManagerPortal from './pages/TempManagerPortal';
 import SuperAdminPortal from './pages/SuperAdmin/SuperAdminPortal';
 import Profile from './pages/Profile';
 
@@ -166,6 +167,15 @@ function App() {
             element={
               <ProtectedWrapper allowedRoles={['Admin/Manager']}>
                 <ManagerHub />
+              </ProtectedWrapper>
+            }
+          />
+
+          <Route
+            path="/temp-manager-portal"
+            element={
+              <ProtectedWrapper allowedRoles={['Admin/Manager']}>
+                <TempManagerPortal />
               </ProtectedWrapper>
             }
           />

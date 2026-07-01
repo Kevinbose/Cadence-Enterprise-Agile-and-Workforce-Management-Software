@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const { sequelize, User, Sprint } = require('../models');
+const {
+  resolveTempManagerGrant,
+  applyTempManagerElevation,
+} = require('../utils/resolveTempManagerGrant');
 
 const getTodayIST = () =>
   new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -15,6 +19,8 @@ const sanitizeUser = (user) => ({
   teamId: user.teamId,
   managerId: user.managerId,
   managerName: user.Manager?.name || null,
+  isTempManager: user.isTempManager || false,
+  tempGrantId: user.tempGrantId || null,
 });
 
 const resolveTemporalScrumMaster = async (userId) => {
@@ -33,6 +39,14 @@ const resolveTemporalScrumMaster = async (userId) => {
 };
 
 const buildUserPayload = async (user) => {
+  // Login path has no auth middleware — resolve JIT grant on the in-memory user.
+  if (user.systemRole === 'Employee' && !user.isTempManager) {
+    const grant = await resolveTempManagerGrant(user.id);
+    if (grant) {
+      applyTempManagerElevation(user, grant);
+    }
+  }
+
   const isTemporalScrumMaster = await resolveTemporalScrumMaster(user.id);
 
   return {

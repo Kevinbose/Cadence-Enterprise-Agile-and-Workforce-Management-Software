@@ -43,6 +43,7 @@ const auditRoutes = require('./routes/audit.routes');
 const intelligenceRoutes = require('./routes/intelligence.routes');
 const commentRoutes = require('./routes/comment.routes');
 const provisionRoutes = require('./routes/provision.routes');
+const tempManagerRoutes = require('./routes/tempManager.routes');
 
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
@@ -63,6 +64,7 @@ app.use('/api/v1/audits', auditRoutes);
 app.use('/api/v1/intelligence', intelligenceRoutes);
 app.use('/api/v1/comments', commentRoutes);
 app.use('/api/v1/provision', provisionRoutes);
+app.use('/api/v1/temp-manager', tempManagerRoutes);
 
 // ── Global error handler ──────────────────────────────────────────────────────
 // Must be defined AFTER all routes. Catches any error passed via next(error).
@@ -161,6 +163,39 @@ const runBiometricPhotosMigration = async () => {
   }
 };
 
+const runTempManagerGrantMigration = async () => {
+  try {
+    const [tables] = await sequelize.query(
+      "SHOW TABLES LIKE 'temp_manager_grants'"
+    );
+    if (tables.length === 0) {
+      await sequelize.query(`
+        CREATE TABLE temp_manager_grants (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          grantor_id INT NOT NULL,
+          grantee_id INT NOT NULL,
+          team_id INT NOT NULL,
+          start_time DATETIME NOT NULL,
+          end_time DATETIME NOT NULL,
+          is_active TINYINT(1) NOT NULL DEFAULT 1,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_tmg_grantor (grantor_id),
+          INDEX idx_tmg_grantee (grantee_id),
+          INDEX idx_tmg_team_active (team_id, is_active),
+          INDEX idx_tmg_grantee_active (grantee_id, is_active)
+        )
+      `);
+      console.log('🔧 Temp Manager migration: temp_manager_grants table created.');
+    } else {
+      console.log('temp_manager_grants table already exists — skipping CREATE TABLE.');
+    }
+    console.log('✅ Temp Manager migration complete.');
+  } catch (err) {
+    console.error('❌ Temp Manager migration failed:', err.message);
+  }
+};
+
 const runAdjudicationAuditMigration = async () => {
   try {
     const [cols] = await sequelize.query(
@@ -185,6 +220,7 @@ const startServer = async () => {
     await runITProvisioningMigration();
     await runBiometricPhotosMigration();
     await runAdjudicationAuditMigration();
+    await runTempManagerGrantMigration();
 
     app.listen(PORT, () => {
       console.log(

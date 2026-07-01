@@ -1,5 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const {
+  resolveTempManagerGrant,
+  applyTempManagerElevation,
+} = require('../utils/resolveTempManagerGrant');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -50,6 +54,15 @@ const authenticate = async (req, res, next) => {
     }
 
     req.user = user;
+
+    // JIT Temp Manager elevation — request-scoped only, never persists to DB.
+    if (user.systemRole === 'Employee') {
+      const grant = await resolveTempManagerGrant(user.id);
+      if (grant) {
+        applyTempManagerElevation(req.user, grant);
+      }
+    }
+
     next();
   } catch (error) {
     next(error);

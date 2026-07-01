@@ -10,6 +10,7 @@ const AuditLog = require('./auditLog.model');
 const Comment = require('./comment.model');
 const Task = require('./task.model');
 const AttendanceRecord = require('./attendanceRecord.model');
+const TempManagerGrant = require('./tempManagerGrant.model');
 
 // ==========================================
 // 1. User Self-Referential (Manager ↔ Reports)
@@ -95,6 +96,26 @@ AttendanceRecord.belongsTo(User, {
   as: 'Adjudicator',
 });
 
+// ==========================================
+// 12. User ↔ TempManagerGrant (Temporal Delegation)
+// ==========================================
+User.hasMany(TempManagerGrant, {
+  as: 'GrantsAsGrantor',
+  foreignKey: 'grantorId',
+});
+User.hasMany(TempManagerGrant, {
+  as: 'GrantsAsGrantee',
+  foreignKey: 'granteeId',
+});
+TempManagerGrant.belongsTo(User, {
+  as: 'Grantor',
+  foreignKey: 'grantorId',
+});
+TempManagerGrant.belongsTo(User, {
+  as: 'Grantee',
+  foreignKey: 'granteeId',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -103,4 +124,5 @@ module.exports = {
   AuditLog,
   Comment,
   AttendanceRecord,
+  TempManagerGrant,
 };

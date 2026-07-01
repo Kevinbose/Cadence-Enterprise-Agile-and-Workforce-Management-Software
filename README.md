@@ -35,6 +35,17 @@ This repository contains two main layers:
 - Unified employee details console showing Name, Role, Corporate Email, and dynamic organization reporting structures (e.g. Reports To manager's name).
 - **Self-Service Credentials Manager**: Securely updates password with robust frontend validation, authenticated bcrypt password hashing on the backend, and a double-confirmation security dialog box.
 
+### 6. Temporal Manager Delegation System (Temp Manager)
+- Just-in-Time role elevation model allowing direct delegation of Direct Manager duties to an eligible team member for a specified time window.
+- Persisted temporal grants in the database (`temp_manager_grants`), guaranteed to auto-expire without mutative updates to the user's permanent role in MySQL.
+- Full premium light-themed cockpit interface for managers to authorize, list, and revoke active temporal elevations.
+
+### 7. Bulk Adjudication & Hierarchical Cascade System
+- Secure multi-select board operations (Bulk Approve and Bulk Reject) reserved for Admins, Managers, and Active/Temporal Scrum Masters.
+- **Deadlock-Resistant Transaction Architecture**: Executes sequential loop iterations under a single database transaction using row-level locking (`SELECT ... FOR UPDATE`), entirely mitigating deadlocks during high-concurrency operations.
+- **Scoped Recursive Rollups**: Upgraded cascade completion engines to execute cleanly within the transaction boundary, allowing subtasks to automatically cascade and promote parents to `DONE` safely.
+- **Bulk Action Floating Bar & Adjudication Modal**: Floating responsive action HUD at the bottom of the viewport with slide-up micro-animations and mandatory rejection comment validations.
+
 ---
 
 ## 🛠️ Getting Started (Local Development)

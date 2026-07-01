@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { Sprint } = require('../models');
+const { safeExecuteRollover } = require('../utils/sprintRollover');
 
 const getTodayIST = () =>
   new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -77,6 +78,11 @@ const checkTemporalScrumMaster = async (req, res, next) => {
         await existingActive.update({ status: 'COMPLETED' });
       }
       await activeSprint.update({ status: 'ACTIVE' });
+
+      // Scrum-route JIT activation path — the 5th and final activation site.
+      // Gated on an actual flip; idempotent + deadlock-safe via the engine's
+      // row locks; non-fatal so it never blocks a scrum-route request.
+      await safeExecuteRollover(activeSprint);
     }
 
     req.isTemporalScrumMaster = activeSprint.scrumMasterId === req.user.id || req.user.systemRole === 'Admin/Manager';

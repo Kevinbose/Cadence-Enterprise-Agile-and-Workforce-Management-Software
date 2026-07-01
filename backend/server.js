@@ -163,6 +163,30 @@ const runBiometricPhotosMigration = async () => {
   }
 };
 
+const runSprintRolloverMigration = async () => {
+  try {
+    const [originCols] = await sequelize.query(
+      "SHOW COLUMNS FROM tasks LIKE 'original_sprint_id'"
+    );
+    if (originCols.length === 0) {
+      await sequelize.query('ALTER TABLE tasks ADD COLUMN original_sprint_id INT NULL');
+      console.log('🔧 Sprint Rollover migration: original_sprint_id column added to tasks.');
+    }
+
+    const [countCols] = await sequelize.query(
+      "SHOW COLUMNS FROM tasks LIKE 'rollover_count'"
+    );
+    if (countCols.length === 0) {
+      await sequelize.query('ALTER TABLE tasks ADD COLUMN rollover_count INT NOT NULL DEFAULT 0');
+      console.log('🔧 Sprint Rollover migration: rollover_count column added to tasks.');
+    }
+
+    console.log('✅ Sprint Rollover migration complete.');
+  } catch (err) {
+    console.error('❌ Sprint Rollover migration failed:', err.message);
+  }
+};
+
 const runTempManagerGrantMigration = async () => {
   try {
     const [tables] = await sequelize.query(
@@ -221,6 +245,7 @@ const startServer = async () => {
     await runBiometricPhotosMigration();
     await runAdjudicationAuditMigration();
     await runTempManagerGrantMigration();
+    await runSprintRolloverMigration();
 
     app.listen(PORT, () => {
       console.log(

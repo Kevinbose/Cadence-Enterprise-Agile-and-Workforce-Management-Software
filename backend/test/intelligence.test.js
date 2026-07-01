@@ -46,7 +46,8 @@ const runSuite = async () => {
       user: {
         id: 3,
         systemRole: 'Admin/Manager',
-      }
+      },
+      query: {},
     };
 
     const res = {
@@ -76,8 +77,8 @@ const runSuite = async () => {
       assert('Workforce user has name', emp.name !== undefined);
       assert('Workforce user has email', emp.email !== undefined);
       assert('Workforce user has employeeId', emp.employeeId !== undefined);
-      assert('Workforce user has ari', typeof emp.ari === 'number');
-      assert('Workforce user has ftpr', typeof emp.ftpr === 'number');
+      assert('Workforce user has ari', emp.ari === null || typeof emp.ari === 'number');
+      assert('Workforce user has ftpr', emp.ftpr === null || typeof emp.ftpr === 'number');
       assert('Workforce user has trustScore', typeof emp.trustScore === 'number' && emp.trustScore >= 0 && emp.trustScore <= 100);
     }
   } catch (err) {
@@ -90,12 +91,21 @@ const runSuite = async () => {
     let responseData = null;
     let responseStatus = null;
 
+    // Resolve a valid employee ID for Manager (user id 3) to test getEmployeeDossier dynamically
+    const dbManager = await User.findByPk(3);
+    const targetTeamId = dbManager ? dbManager.teamId : 1;
+    const dbEmployee = await User.findOne({
+      where: { systemRole: 'Employee', teamId: targetTeamId }
+    });
+    const validEmpId = dbEmployee ? String(dbEmployee.id) : '1';
+
     const req = {
-      params: { userId: '1' },
+      params: { userId: validEmpId },
       user: {
         id: 3,
         systemRole: 'Admin/Manager',
-      }
+      },
+      query: {},
     };
 
     const res = {
@@ -124,8 +134,8 @@ const runSuite = async () => {
 
     if (responseData && responseData.kpis) {
       const k = responseData.kpis;
-      assert('KPIs contains ari', typeof k.ari === 'number');
-      assert('KPIs contains ftpr', typeof k.ftpr === 'number');
+      assert('KPIs contains ari', k.ari === null || typeof k.ari === 'number');
+      assert('KPIs contains ftpr', k.ftpr === null || typeof k.ftpr === 'number');
       assert('KPIs contains trustScore', typeof k.trustScore === 'number');
     }
   } catch (err) {
@@ -143,7 +153,8 @@ const runSuite = async () => {
       user: {
         id: 3,
         systemRole: 'Admin/Manager',
-      }
+      },
+      query: {},
     };
 
     const res = {

@@ -31,6 +31,7 @@ import {
   updateStatus,
   toggleMyIssues,
 } from '../features/kanban/kanbanSlice';
+import { fetchAllSprints } from '../features/sprints/sprintSlice';
 
 // ─── Column definitions with accent themes ───────────────────────────────────
 const COLUMNS = [
@@ -206,6 +207,13 @@ const KanbanBoard = () => {
   useEffect(() => {
     dispatch(fetchBoard(sprintIdParam ? parseInt(sprintIdParam, 10) : null));
   }, [dispatch, sprintIdParam]);
+
+  // Load the team's sprints so the Edit modal can resolve a rolled-over task's
+  // original sprint (name + endDate) for the overdue banner, even on direct
+  // /board/:sprintId navigation where the board is the first page loaded.
+  useEffect(() => {
+    dispatch(fetchAllSprints());
+  }, [dispatch]);
 
   // ── Unified status tracking for celebration trigger ─────────────────────────
   useEffect(() => {

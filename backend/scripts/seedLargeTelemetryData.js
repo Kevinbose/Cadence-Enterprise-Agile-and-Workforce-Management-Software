@@ -3,8 +3,9 @@
  *   - 2 Managers (different team IDs)
  *   - 2 Scrum Masters (one for each manager's team)
  *   - 20 Employees (10 under Manager 1 / Team 1, 10 under Manager 2 / Team 2)
- *   - 8 Sprints (4 per team: 1 active, 2 pending, 1 completed)
- *   - Telemetry-grade Tasks, Comments, Audit logs, and Attendance records to highlight differences in Trust Scores, ARI, FTPR, anomalies, and Git diffs.
+ *   - 12 Sprints (6 per team: Q1 completed, Q2 completed, Q3 completed, Q3 active, and 2 pending)
+ *   - Telemetry-grade Tasks, Comments, Audit logs, and Attendance records spanning Q1, Q2, and Q3 2026.
+ *   - This highlights the differences in Trust Scores, ARI, FTPR, anomalies, and Git diffs across multiple quarters in Manager Hub & Appraisal Engine.
  * Usage: node scripts/seedLargeTelemetryData.js
  */
 
@@ -155,18 +156,45 @@ const run = async () => {
       team2Employees.push(emp);
     }
 
-    // ── 4. Create Sprints (4 per team: 1 active, 2 pending, 1 completed) ──────
-    console.log('📅 Seeding 8 sprints across both teams...');
+    // ── 4. Create Sprints (6 per team across Q1, Q2, Q3 2026) ──────────────────
+    console.log('📅 Seeding 12 sprints spanning Q1, Q2, Q3 2026...');
     const today = getTodayIST();
+    const currentYear = new Date(today).getFullYear();
 
     const sprints = [];
+    
     // Team 1 Sprints
     sprints.push(await Sprint.create({
-      name: 'T1 Active Sprint 10',
+      name: 'T1 Q1 Historic Sprint 7',
+      startDate: `${currentYear}-02-01`,
+      endDate: `${currentYear}-02-15`,
+      scrumMasterId: scrumMaster1.id,
+      status: 'COMPLETED',
+      teamId: 1,
+    }));
+    sprints.push(await Sprint.create({
+      name: 'T1 Q2 Historic Sprint 8',
+      startDate: `${currentYear}-05-01`,
+      endDate: `${currentYear}-05-15`,
+      scrumMasterId: scrumMaster1.id,
+      status: 'COMPLETED',
+      teamId: 1,
+    }));
+    sprints.push(await Sprint.create({
+      name: 'T1 Q3 Historic Sprint 9',
+      startDate: addDays(today, -20),
+      endDate: addDays(today, -6),
+      scrumMasterId: scrumMaster1.id,
+      status: 'COMPLETED',
+      teamId: 1,
+    }));
+    sprints.push(await Sprint.create({
+      name: 'T1 Q3 Active Sprint 10',
       startDate: addDays(today, -5),
       endDate: addDays(today, 9),
       scrumMasterId: scrumMaster1.id,
       status: 'ACTIVE',
+      teamId: 1,
     }));
     sprints.push(await Sprint.create({
       name: 'T1 Planned Sprint 11',
@@ -174,6 +202,7 @@ const run = async () => {
       endDate: addDays(today, 24),
       scrumMasterId: scrumMaster1.id,
       status: 'PENDING',
+      teamId: 1,
     }));
     sprints.push(await Sprint.create({
       name: 'T1 Planned Sprint 12',
@@ -181,22 +210,41 @@ const run = async () => {
       endDate: addDays(today, 39),
       scrumMasterId: scrumMaster1.id,
       status: 'PENDING',
-    }));
-    sprints.push(await Sprint.create({
-      name: 'T1 Historic Sprint 9',
-      startDate: addDays(today, -20),
-      endDate: addDays(today, -6),
-      scrumMasterId: scrumMaster1.id,
-      status: 'COMPLETED',
+      teamId: 1,
     }));
 
     // Team 2 Sprints
     sprints.push(await Sprint.create({
-      name: 'T2 Active Sprint 15',
+      name: 'T2 Q1 Historic Sprint 12',
+      startDate: `${currentYear}-02-01`,
+      endDate: `${currentYear}-02-15`,
+      scrumMasterId: scrumMaster2.id,
+      status: 'COMPLETED',
+      teamId: 2,
+    }));
+    sprints.push(await Sprint.create({
+      name: 'T2 Q2 Historic Sprint 13',
+      startDate: `${currentYear}-05-01`,
+      endDate: `${currentYear}-05-15`,
+      scrumMasterId: scrumMaster2.id,
+      status: 'COMPLETED',
+      teamId: 2,
+    }));
+    sprints.push(await Sprint.create({
+      name: 'T2 Q3 Historic Sprint 14',
+      startDate: addDays(today, -20),
+      endDate: addDays(today, -6),
+      scrumMasterId: scrumMaster2.id,
+      status: 'COMPLETED',
+      teamId: 2,
+    }));
+    sprints.push(await Sprint.create({
+      name: 'T2 Q3 Active Sprint 15',
       startDate: addDays(today, -5),
       endDate: addDays(today, 9),
       scrumMasterId: scrumMaster2.id,
       status: 'ACTIVE',
+      teamId: 2,
     }));
     sprints.push(await Sprint.create({
       name: 'T2 Planned Sprint 16',
@@ -204,6 +252,7 @@ const run = async () => {
       endDate: addDays(today, 24),
       scrumMasterId: scrumMaster2.id,
       status: 'PENDING',
+      teamId: 2,
     }));
     sprints.push(await Sprint.create({
       name: 'T2 Planned Sprint 17',
@@ -211,84 +260,252 @@ const run = async () => {
       endDate: addDays(today, 39),
       scrumMasterId: scrumMaster2.id,
       status: 'PENDING',
-    }));
-    sprints.push(await Sprint.create({
-      name: 'T2 Historic Sprint 14',
-      startDate: addDays(today, -20),
-      endDate: addDays(today, -6),
-      scrumMasterId: scrumMaster2.id,
-      status: 'COMPLETED',
+      teamId: 2,
     }));
 
-    const [t1Active, t1Pending1, t1Pending2, t1Completed] = sprints.slice(0, 4);
-    const [t2Active, t2Pending1, t2Pending2, t2Completed] = sprints.slice(4, 8);
+    const [t1Q1Comp, t1Q2Comp, t1Q3Comp, t1Active, t1Pending1, t1Pending2] = sprints.slice(0, 6);
+    const [t2Q1Comp, t2Q2Comp, t2Q3Comp, t2Active, t2Pending1, t2Pending2] = sprints.slice(6, 12);
 
-    // ── 5. Seed Attendance / Timesheets & Anomalies (Last 10 Days) ────────────
-    console.log('⏰ Generating 10 days of timesheet & geofence attendance records...');
+    // ── 5. Seed Attendance / Timesheets & Anomalies (Spanning Q1, Q2, Q3) ──────
+    console.log('⏰ Generating timesheet & geofence attendance records for Q1, Q2, and Q3...');
     const allEmployees = [...team1Employees, ...team2Employees];
 
-    for (let dayOffset = -10; dayOffset <= -1; dayOffset++) {
-      const recordDate = addDays(today, dayOffset);
-      
-      // Skip weekends to look realistic
-      const dateObj = new Date(`${recordDate}T00:00:00+05:30`);
-      const dayOfWeek = dateObj.getDay();
-      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+    // Helper to generate 8 working days of attendance within a date range
+    const seedAttendancePeriod = async (startBaseDate, prefixLabel) => {
+      for (let dayOffset = 0; dayOffset < 8; dayOffset++) {
+        const recordDate = addDays(startBaseDate, dayOffset);
+        const dateObj = new Date(`${recordDate}T00:00:00+05:30`);
+        const dayOfWeek = dateObj.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-      for (const emp of allEmployees) {
-        let status = 'PRESENT_OFFICE';
-        let workHours = 8.5;
-        let systemAutoClosed = false;
-        let regularizationReason = null;
+        for (const emp of allEmployees) {
+          let status = 'PRESENT_OFFICE';
+          let workHours = 8.5;
+          let systemAutoClosed = false;
+          let regularizationReason = null;
+
+          // Introduce variation based on performance tier
+          if (emp.perfType === 'RISK') {
+            const roll = Math.random();
+            if (roll < 0.25) {
+              status = 'ABSENT';
+              workHours = 0;
+            } else if (roll < 0.45) {
+              status = 'WFH_APPROVED';
+              workHours = 8.0;
+            } else if (roll < 0.65) {
+              status = 'PRESENT_OFFICE';
+              workHours = 12.0;
+              systemAutoClosed = true; // Auto-closed timesheet anomaly
+            }
+          } else if (emp.perfType === 'GOOD') {
+            if (Math.random() < 0.15) {
+              status = 'WFH_APPROVED';
+            }
+          } else {
+            // ELITE performers: perfect check-in record
+            if (Math.random() < 0.08) {
+              status = 'WFH_APPROVED';
+            }
+          }
+
+          await AttendanceRecord.create({
+            userId: emp.id,
+            date: recordDate,
+            checkInTime: status !== 'ABSENT' ? new Date(`${recordDate}T09:15:00+05:30`) : null,
+            checkOutTime: status !== 'ABSENT' ? new Date(`${recordDate}T17:45:00+05:30`) : null,
+            status,
+            workHours,
+            isActiveSession: false,
+            systemAutoClosed,
+            regularizationReason: systemAutoClosed && Math.random() < 0.6 ? `Forgot check-out during ${prefixLabel} push.` : null,
+            isStandupLocked: true,
+          });
+        }
+      }
+    };
+
+    // Seed Q1 Attendance (February 2026)
+    await seedAttendancePeriod(`${currentYear}-02-02`, 'Q1');
+    // Seed Q2 Attendance (May 2026)
+    await seedAttendancePeriod(`${currentYear}-05-02`, 'Q2');
+    // Seed Q3 Attendance (Current/Recent weeks)
+    await seedAttendancePeriod(addDays(today, -15), 'Q3');
+
+    // ── 6. Seed Tasks, Comments & Diffs (To derive GTP & FTPR per Quarter) ──────
+    console.log('🏗️ Creating deliverables, comments, and audit diff records spanning quarters...');
+
+    const seedTeamTasks = async (
+      teamId,
+      manager,
+      scrumMaster,
+      employees,
+      q1Sprint,
+      q2Sprint,
+      q3CompletedSprint,
+      activeSprint,
+      pendingSprint1,
+      pendingSprint2
+    ) => {
+      // Helper to generate comments and audits for a task in a specific quarter
+      const addQuarterlyTelemetry = async (task, emp, quarterName, baseDateStr) => {
+        const dateOffset = (days) => new Date(addDays(baseDateStr, days) + 'T12:00:00.000Z');
 
         if (emp.perfType === 'RISK') {
-          // 30% chance of WFH, 25% chance of ABSENT, 20% chance of auto-closed anomaly
-          const roll = Math.random();
-          if (roll < 0.25) {
-            status = 'ABSENT';
-            workHours = 0;
-          } else if (roll < 0.45) {
-            status = 'WFH_APPROVED';
-            workHours = 8.0;
-          } else if (roll < 0.65) {
-            status = 'PRESENT_OFFICE';
-            workHours = 12.0;
-            systemAutoClosed = true; // anomaly!
-          }
-        } else if (emp.perfType === 'GOOD') {
-          // occasional WFH
-          if (Math.random() < 0.2) {
-            status = 'WFH_APPROVED';
-          }
+          // Negative feedback causing rejections
+          await Comment.create({
+            taskId: task.id,
+            authorId: scrumMaster.id,
+            content: `Rejected in ${quarterName}: Validation fails.`,
+            evaluationTier: 'Negative (Simple)',
+            createdAt: dateOffset(2),
+            updatedAt: dateOffset(2),
+          });
+
+          await Comment.create({
+            taskId: task.id,
+            authorId: manager.id,
+            content: `Rejected in ${quarterName}: Unit tests failing on main branch.`,
+            evaluationTier: 'Negative (Serious)',
+            createdAt: dateOffset(4),
+            updatedAt: dateOffset(4),
+          });
+
+          // Strike 1: Scope Creep title change
+          await AuditLog.create({
+            taskId: task.id,
+            sprintId: task.sprintId,
+            userId: emp.id,
+            action: 'UPDATE',
+            changes: {
+              title: { old: `Setup basic component specifications in ${quarterName}`, new: task.title }
+            },
+            createdAt: dateOffset(3),
+          });
+
+          // Strike 2: Description change
+          await AuditLog.create({
+            taskId: task.id,
+            sprintId: task.sprintId,
+            userId: emp.id,
+            action: 'UPDATE',
+            changes: {
+              description: { old: `Full implementation detailing unit test coverage.`, new: `Basic structure only. Tests skipped due to time crunch.` }
+            },
+            createdAt: dateOffset(5),
+          });
         } else {
-          // ELITE performers have perfect attendance
-          if (Math.random() < 0.1) {
-            status = 'WFH_APPROVED';
+          // ELITE and GOOD performers get positive evaluations
+          await Comment.create({
+            taskId: task.id,
+            authorId: scrumMaster.id,
+            content: `Upvote in ${quarterName}: Excellent implementation and clean API pattern!`,
+            evaluationTier: 'Positive',
+            createdAt: dateOffset(6),
+            updatedAt: dateOffset(6),
+          });
+
+          if (emp.perfType === 'ELITE') {
+            await Comment.create({
+              taskId: task.id,
+              authorId: manager.id,
+              content: `Upvote in ${quarterName}: Exceeded performance criteria, beautiful architecture!`,
+              evaluationTier: 'Positive',
+              createdAt: dateOffset(8),
+              updatedAt: dateOffset(8),
+            });
           }
         }
+      };
 
-        await AttendanceRecord.create({
-          userId: emp.id,
-          date: recordDate,
-          checkInTime: status !== 'ABSENT' ? new Date(`${recordDate}T09:15:00+05:30`) : null,
-          checkOutTime: status !== 'ABSENT' ? new Date(`${recordDate}T17:45:00+05:30`) : null,
+      // 1. Q1 SPRINT (COMPLETED)
+      const q1Epic = await Task.create({
+        title: `Q1 Foundation Architecture (Team ${teamId})`,
+        type: 'Epic',
+        status: 'DONE',
+        creatorId: manager.id,
+        sprintId: q1Sprint.id,
+        createdAt: new Date(`${currentYear}-02-01T09:00:00.000Z`),
+        updatedAt: new Date(`${currentYear}-02-15T18:00:00.000Z`),
+      }, { userId: manager.id });
+
+      for (const emp of employees) {
+        // Vary completion velocity: RISK devs might not finish
+        const status = emp.perfType === 'RISK' ? 'IN_REVIEW' : 'DONE';
+        const task = await Task.create({
+          title: `Q1 Base microservices delivery for ${emp.name}`,
+          type: 'Story',
           status,
-          workHours,
-          isActiveSession: false,
-          systemAutoClosed,
-          regularizationReason: systemAutoClosed && Math.random() < 0.5 ? 'Forgot to pause session when leaving office.' : null,
-          isStandupLocked: true,
-        });
+          parentId: q1Epic.id,
+          creatorId: scrumMaster.id,
+          assigneeId: emp.id,
+          sprintId: q1Sprint.id,
+          createdAt: new Date(`${currentYear}-02-02T10:00:00.000Z`),
+          updatedAt: new Date(`${currentYear}-02-14T17:00:00.000Z`),
+        }, { userId: scrumMaster.id });
+
+        await addQuarterlyTelemetry(task, emp, 'Q1', `${currentYear}-02-02`);
       }
-    }
 
-    // ── 6. Seed Tasks, Comments & Diffs (To derive GTP & FTPR) ─────────────────
-    console.log('🏗️ Creating deliverables, comments, and audit diff records...');
+      // 2. Q2 SPRINT (COMPLETED)
+      const q2Epic = await Task.create({
+        title: `Q2 Security & Data Pipeline (Team ${teamId})`,
+        type: 'Epic',
+        status: 'DONE',
+        creatorId: manager.id,
+        sprintId: q2Sprint.id,
+        createdAt: new Date(`${currentYear}-05-01T09:00:00.000Z`),
+        updatedAt: new Date(`${currentYear}-05-15T18:00:00.000Z`),
+      }, { userId: manager.id });
 
-    // We helper function to populate tasks for a specific team
-    const seedTeamTasks = async (teamId, manager, scrumMaster, employees, activeSprint, completedSprint, pendingSprint1, pendingSprint2) => {
-      // 1. Epic in active sprint
-      const epic = await Task.create({
+      for (const emp of employees) {
+        // RISK developers complete fewer tasks
+        const status = emp.perfType === 'RISK' && emp.name.includes('Careless') ? 'TODO' : 'DONE';
+        const task = await Task.create({
+          title: `Q2 Secure integration and analytics for ${emp.name}`,
+          type: 'Story',
+          status,
+          parentId: q2Epic.id,
+          creatorId: scrumMaster.id,
+          assigneeId: emp.id,
+          sprintId: q2Sprint.id,
+          createdAt: new Date(`${currentYear}-05-02T10:00:00.000Z`),
+          updatedAt: new Date(`${currentYear}-05-14T17:00:00.000Z`),
+        }, { userId: scrumMaster.id });
+
+        await addQuarterlyTelemetry(task, emp, 'Q2', `${currentYear}-05-02`);
+      }
+
+      // 3. Q3 SPRINT (COMPLETED)
+      const q3Epic = await Task.create({
+        title: `Q3 Performance Tuning (Team ${teamId})`,
+        type: 'Epic',
+        status: 'DONE',
+        creatorId: manager.id,
+        sprintId: q3CompletedSprint.id,
+        createdAt: new Date(addDays(today, -20) + 'T09:00:00.000Z'),
+        updatedAt: new Date(addDays(today, -6) + 'T18:00:00.000Z'),
+      }, { userId: manager.id });
+
+      for (const emp of employees) {
+        const status = 'DONE';
+        const task = await Task.create({
+          title: `Q3 Telemetry tuning module for ${emp.name}`,
+          type: 'Task',
+          status,
+          parentId: q3Epic.id,
+          creatorId: scrumMaster.id,
+          assigneeId: emp.id,
+          sprintId: q3CompletedSprint.id,
+          createdAt: new Date(addDays(today, -19) + 'T10:00:00.000Z'),
+          updatedAt: new Date(addDays(today, -7) + 'T17:00:00.000Z'),
+        }, { userId: scrumMaster.id });
+
+        await addQuarterlyTelemetry(task, emp, 'Q3', addDays(today, -19));
+      }
+
+      // 4. Q3 ACTIVE SPRINT (CURRENT ONGOING WORK)
+      const activeEpic = await Task.create({
         title: `Core Module Integration (Team ${teamId})`,
         type: 'Epic',
         status: 'IN_PROGRESS',
@@ -296,89 +513,45 @@ const run = async () => {
         sprintId: activeSprint.id,
       }, { userId: manager.id });
 
-      // SPRINT TASKS
       for (const emp of employees) {
-        // Create 2 tasks in active sprint for each employee
+        // Pre-seed overdue tasks that rolled over from Q3 Completed Sprint for visual verification
+        const isOverdueDemo = emp.perfType === 'RISK' && (emp.name.includes('Careless') || emp.name.includes('Lax'));
         const taskActive = await Task.create({
-          title: `Implement feature deliverables for ${emp.name}`,
+          title: `Implement active feature deliverables for ${emp.name}`,
           type: 'Story',
           status: emp.perfType === 'ELITE' ? 'DONE' : 'IN_PROGRESS',
-          parentId: epic.id,
+          parentId: activeEpic.id,
           creatorId: scrumMaster.id,
           assigneeId: emp.id,
           sprintId: activeSprint.id,
+          originalSprintId: isOverdueDemo ? q3CompletedSprint.id : null,
+          rolloverCount: isOverdueDemo ? 1 : 0,
         }, { userId: scrumMaster.id });
 
-        // High risk employees get rejections (Negative comments + audit bounces)
+        // Add telemetry for active tasks
         if (emp.perfType === 'RISK') {
-          // Rejection 1
           await Comment.create({
             taskId: taskActive.id,
             authorId: scrumMaster.id,
-            content: `Rejected: Code structure lacks proper validation rules.`,
+            content: `Feedback on active story: Logic looks cluttered. Needs modularization.`,
             evaluationTier: 'Negative (Simple)',
           });
 
-          // Rejection 2
-          await Comment.create({
-            taskId: taskActive.id,
-            authorId: manager.id,
-            content: `Rejected: Memory leak detected during integration tests. Critical fix required.`,
-            evaluationTier: 'Negative (Serious)',
-          });
-
-          // Seed update diffs in audit_logs to register as GTP (Goalpost Tamper Strikes)
-          // Strike 1: Title Change
           await AuditLog.create({
             taskId: taskActive.id,
             sprintId: activeSprint.id,
             userId: emp.id,
             action: 'UPDATE',
             changes: {
-              title: { old: `Original title specifications for ${emp.name}`, new: `Implement feature deliverables for ${emp.name}` }
+              title: { old: `Draft specifications for ${emp.name}`, new: taskActive.title }
             },
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-          });
-
-          // Strike 2: Description Change
-          await AuditLog.create({
-            taskId: taskActive.id,
-            sprintId: activeSprint.id,
-            userId: emp.id,
-            action: 'UPDATE',
-            changes: {
-              description: { old: `Deliver backend services and tests.`, new: `Deliver basic services without test code (updated due to lack of time).` }
-            },
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
           });
         }
       }
 
-      // 2. Completed Sprint Tasks (already finished)
-      const oldEpic = await Task.create({
-        title: `Sprint Legacy Overhaul (Team ${teamId})`,
-        type: 'Epic',
-        status: 'DONE',
-        creatorId: manager.id,
-        sprintId: completedSprint.id,
-      }, { userId: manager.id });
-
-      for (const emp of employees) {
-        await Task.create({
-          title: `Legacy system configuration for ${emp.name}`,
-          type: 'Task',
-          status: 'DONE',
-          parentId: oldEpic.id,
-          creatorId: scrumMaster.id,
-          assigneeId: emp.id,
-          sprintId: completedSprint.id,
-        }, { userId: scrumMaster.id });
-      }
-
-      // 3. Pending Sprints Tasks (all in TODO status)
-      // Pending Sprint 1
+      // 5. PENDING SPRINT 1
       const pendingEpic1 = await Task.create({
-        title: `Feature Roadmap Planning Q3 (Team ${teamId})`,
+        title: `Feature Roadmap Planning Q4 (Team ${teamId})`,
         type: 'Epic',
         status: 'TODO',
         creatorId: manager.id,
@@ -407,7 +580,7 @@ const run = async () => {
         }, { userId: scrumMaster.id });
       }
 
-      // Pending Sprint 2
+      // 6. PENDING SPRINT 2
       const pendingEpic2 = await Task.create({
         title: `Core Scalability & Security (Team ${teamId})`,
         type: 'Epic',
@@ -439,8 +612,31 @@ const run = async () => {
       }
     };
 
-    await seedTeamTasks(1, manager1, scrumMaster1, team1Employees, t1Active, t1Completed, t1Pending1, t1Pending2);
-    await seedTeamTasks(2, manager2, scrumMaster2, team2Employees, t2Active, t2Completed, t2Pending1, t2Pending2);
+    await seedTeamTasks(
+      1,
+      manager1,
+      scrumMaster1,
+      team1Employees,
+      t1Q1Comp,
+      t1Q2Comp,
+      t1Q3Comp,
+      t1Active,
+      t1Pending1,
+      t1Pending2
+    );
+
+    await seedTeamTasks(
+      2,
+      manager2,
+      scrumMaster2,
+      team2Employees,
+      t2Q1Comp,
+      t2Q2Comp,
+      t2Q3Comp,
+      t2Active,
+      t2Pending1,
+      t2Pending2
+    );
 
     console.log('✅ Created tasks and audit trails.');
     console.log('\n======================================================');

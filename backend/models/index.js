@@ -43,6 +43,14 @@ Sprint.hasMany(Task, { foreignKey: 'sprintId' });
 Task.belongsTo(Sprint, { foreignKey: 'sprintId' });
 
 // ==========================================
+// 4b. Sprint ↔ Task (Original Sprint latch — rollover origin)
+// constraints: false — a task's origin sprint may be COMPLETED and must remain
+// referenceable without triggering FK cascade side-effects on sprint changes.
+// ==========================================
+Sprint.hasMany(Task, { as: 'OriginalTasks', foreignKey: 'originalSprintId', constraints: false });
+Task.belongsTo(Sprint, { as: 'OriginalSprint', foreignKey: 'originalSprintId', constraints: false });
+
+// ==========================================
 // 5. Task Self-Referential (Parent ↔ Subtasks)
 // ==========================================
 Task.hasMany(Task, { as: 'Subtasks', foreignKey: 'parentId' });

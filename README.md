@@ -46,6 +46,19 @@ This repository contains two main layers:
 - **Scoped Recursive Rollups**: Upgraded cascade completion engines to execute cleanly within the transaction boundary, allowing subtasks to automatically cascade and promote parents to `DONE` safely.
 - **Bulk Action Floating Bar & Adjudication Modal**: Floating responsive action HUD at the bottom of the viewport with slide-up micro-animations and mandatory rejection comment validations.
 
+### 8. Automated Sprint Rollover & Overdue Task Management
+- **Just-in-Time (JIT) Activation**: Automatically triggers sprint activation and carries out straggler rollovers across multiple entry points (`getAllSprints`, `startSprint`, `editSprint`, and Scrum middlewares), eliminating limbo-states.
+- **Hierarchy Fracture & State Isolation**: Intelligently splits stories or tasks, leaving completed children in historical sprints for report integrity, while migrating uncompleted children, subtasks, and siblings to the newly activated sprint.
+- **Multi-Rollover Latching & Overdue Tracking**: Preserves the `originalSprintId` during first rollover to compute absolute overdue days, incrementing the `rolloverCount` to display warning tags and banners.
+
+### 9. Two-Tiered Performance Analytics System
+- **Tier 1: Manager Hub (Quarterly Tactical)**: Incorporates "Time Machine" filters (Year/Quarter dropdowns) to refresh the workforce grid and deep-dive employee dossiers, scope-filtering all Git-Diff logs, anomalies, and evaluations.
+- **Tier 2: Appraisal Engine (Yearly Strategic)**: A master dashboard displaying team-member metrics over the full calendar year.
+- **Atlassian-Style Analytical Visualizations**:
+  - **Consistency Line Chart**: Plots completion Velocity and Attendance Rate across Q1–Q4, supporting dotted null-breaks for future quarters (EC-8: Future-Quarter Trap) to avoid distorting yearly averages.
+  - **Quality Radar Chart**: Compares individual FTPR, normalized Tamper Strikes, and Overdue counts against team averages on a strictly locked `0` to `100` scale.
+- **Annual Dossier PDF Export**: Client-side PDF generation via `html2canvas` (crisp `{ scale: 2 }` rasterization) and `jsPDF` into an A4 print layout, complete with corporate headers, timestamped footers, and visual graphs.
+
 ---
 
 ## 🛠️ Getting Started (Local Development)

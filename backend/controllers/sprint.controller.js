@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { Sprint, User } = require('../models');
+const { safeExecuteRollover } = require('../utils/sprintRollover');
 
 const getTodayIST = () =>
   new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -59,11 +60,16 @@ const getAllSprints = async (req, res, next) => {
 
     if (pendingToActivate.length > 0) {
       await autoCompleteActive(teamId);
-      await pendingToActivate[0].update({ status: 'ACTIVE' });
+      const activated = pendingToActivate[0];
+      await activated.update({ status: 'ACTIVE' });
 
       for (const s of pendingToActivate.slice(1)) {
         await s.update({ status: 'COMPLETED' });
       }
+
+      // JIT auto-activation just fired → carry forward limbo tasks.
+      // Automated (GET) path: system-user attribution, non-fatal on failure.
+      await safeExecuteRollover(activated);
     }
 
     // ── Step 3: Return only this team's sprints
@@ -167,6 +173,10 @@ const startSprint = async (req, res, next) => {
     await autoCompleteActive(req.user.teamId, sprint.id);
 
     await sprint.update({ startDate: todayIST, status: 'ACTIVE' });
+
+    // Force Start → migrate incomplete tasks from the team's completed sprints.
+    // Manager-initiated action: attribute the rollover to the acting manager.
+    await safeExecuteRollover(sprint, { systemUserId: req.user.id });
 
     const updated = await Sprint.findByPk(sprint.id, { include: [SCRUM_MASTER_INCLUDE] });
 
@@ -286,12 +296,16 @@ const editSprint = async (req, res, next) => {
 
     const todayIST = getTodayIST();
     let newStatus = sprint.status;
+    // Track a genuine PENDING → ACTIVE transition so rollover fires ONLY on the
+    // activation branch, never on the COMPLETE branch (EC-NEW-9).
+    let didActivate = false;
 
     if (endDate < todayIST) {
       newStatus = 'COMPLETED';
     } else if (sprint.status === 'PENDING' && startDate <= todayIST && endDate >= todayIST) {
       await autoCompleteActive(sprint.teamId, sprint.id);
       newStatus = 'ACTIVE';
+      didActivate = true;
     }
 
     await sprint.update({
@@ -300,6 +314,12 @@ const editSprint = async (req, res, next) => {
       endDate,
       status: newStatus,
     });
+
+    // editSprint's silent JIT activation path must also roll over limbo tasks,
+    // otherwise a manager could sidestep Force Start by editing dates (EC-1).
+    if (didActivate) {
+      await safeExecuteRollover(sprint, { systemUserId: req.user.id });
+    }
 
     const updated = await Sprint.findByPk(sprint.id, { include: [SCRUM_MASTER_INCLUDE] });
 

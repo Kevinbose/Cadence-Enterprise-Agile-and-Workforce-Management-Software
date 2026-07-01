@@ -14,6 +14,7 @@ import {
   Menu,
   ChevronLeft,
   UserCog,
+  BarChart3,
 } from 'lucide-react';
 import GlobalHeaderPunch from '../Attendance/GlobalHeaderPunch';
 import RegularizationModal from '../Attendance/RegularizationModal';
@@ -229,6 +230,22 @@ const Layout = ({ children, pageTitle = 'Dashboard' }) => {
               {isCollapsed && (
                 <span className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-md bg-[#172B4D] px-2 py-1 text-xs font-medium text-white shadow-lg group-hover:block z-50">
                   Temp Manager
+                </span>
+              )}
+            </NavLink>
+          )}
+
+          {showManagerNav && (
+            <NavLink
+              to="/appraisal-engine"
+              className={({ isActive }) => sidebarLinkClass(isActive, isCollapsed)}
+              title={isCollapsed ? 'Appraisal Engine' : undefined}
+            >
+              <BarChart3 className="h-4 w-4 flex-shrink-0" />
+              {!isCollapsed && <span className="truncate">Appraisal Engine</span>}
+              {isCollapsed && (
+                <span className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-md bg-[#172B4D] px-2 py-1 text-xs font-medium text-white shadow-lg group-hover:block z-50">
+                  Appraisal Engine
                 </span>
               )}
             </NavLink>

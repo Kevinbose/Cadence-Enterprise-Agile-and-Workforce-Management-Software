@@ -43,9 +43,29 @@ const EditIssueModal = ({ task, onClose }) => {
     error,
   } = useSelector((state) => state.kanban);
 
+  const { sprints } = useSelector((state) => state.sprint);
+
   const isManager = user?.systemRole === 'Admin/Manager';
   const isSM = !isManager && isTemporalScrumMaster;
   const isEmployee = !isManager && !isSM;
+
+  // ── Overdue / rollover derivation (no extra state or API calls) ────────────
+  // originalSprint is resolved from the already-loaded sprint list in Redux.
+  // KanbanBoard dispatches fetchAllSprints on mount so this is populated even
+  // on direct /board/:sprintId navigation (EC-NEW-3).
+  const isOverdue = (task.rolloverCount || 0) > 0 && task.status !== 'DONE';
+  const originalSprint = isOverdue
+    ? sprints.find((s) => s.id === task.originalSprintId)
+    : null;
+  const daysOverdue = originalSprint
+    ? Math.max(
+        0,
+        Math.floor(
+          (new Date() - new Date(`${originalSprint.endDate}T23:59:59+05:30`)) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : 0;
 
   const allowedTypes = useMemo(() => {
     if (isManager) return ALL_TYPES;
@@ -220,6 +240,26 @@ const EditIssueModal = ({ task, onClose }) => {
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* ── Overdue / Rollover warning banner ── */}
+        {isOverdue && (
+          <div className="mx-6 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <div>
+                <p className="text-[13px] font-semibold text-amber-800">
+                  Overdue by {daysOverdue} day{daysOverdue !== 1 ? 's' : ''}
+                </p>
+                <p className="mt-0.5 text-[12px] text-amber-700">
+                  Originally planned for{' '}
+                  <strong>{originalSprint?.name ?? `Sprint #${task.originalSprintId}`}</strong>.
+                  Rolled over <strong>{task.rolloverCount}</strong> time
+                  {task.rolloverCount !== 1 ? 's' : ''}.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
 

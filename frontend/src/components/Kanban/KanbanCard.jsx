@@ -9,6 +9,7 @@ import {
   Pencil,
   Trash2,
   MessageSquare,
+  AlertTriangle,
 } from 'lucide-react';
 
 // ─── Type lozenges with left-dot accent ──────────────────────────────────────
@@ -72,6 +73,10 @@ const KanbanCard = ({ task, isOwner, isElevated, isFrozen, isArchived, onAdvance
     !isFrozen &&
     (task.status === 'IN_REVIEW' || task.status === 'QA_TESTING') &&
     typeof onToggleSelect === 'function';
+
+  // Overdue badge — task has been carried across at least one sprint rollover
+  // and is still unfinished. DONE tasks never show it (they don't roll over).
+  const isOverdue = (task.rolloverCount || 0) > 0 && task.status !== 'DONE';
 
   // ── Determine the contextual action button ─────────────────────────────────
   // Suppress all movement actions when the board is frozen (sprint is PENDING).
@@ -213,6 +218,15 @@ const KanbanCard = ({ task, isOwner, isElevated, isFrozen, isArchived, onAdvance
         <span className="font-mono text-[11px] font-semibold text-[#97A0AF]">
           {task.issueKey}
         </span>
+        {isOverdue && (
+          <span
+            title={`Rolled over ${task.rolloverCount} time${task.rolloverCount !== 1 ? 's' : ''}`}
+            className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm ring-1 ring-orange-400/30"
+          >
+            <AlertTriangle className="h-2.5 w-2.5" />
+            Overdue
+          </span>
+        )}
       </div>
 
       {/* Title */}

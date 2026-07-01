@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { Sprint, User } = require('../models');
+const { safeExecuteRollover } = require('../utils/sprintRollover');
 
 const getTodayIST = () =>
   new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -71,6 +72,15 @@ const resolveActiveSprint = async (req, res, next) => {
           await existingActive.update({ status: 'COMPLETED' });
         }
         await activeSprint.update({ status: 'ACTIVE' });
+
+        // EC-NEW-1: this middleware is the highest-frequency activation path —
+        // it fires on every /tasks/* request and can flip PENDING → ACTIVE
+        // before getAllSprints/Force-Start ever runs. Rollover MUST be wired
+        // here too, gated strictly on an actual flip so steady-state board
+        // loads (already ACTIVE) incur zero rollover overhead. The rollover
+        // engine's own row locks make concurrent flips from multiple team
+        // members idempotent and deadlock-safe (EC-NEW-2). Non-fatal.
+        await safeExecuteRollover(activeSprint);
       }
 
       req.activeSprint = activeSprint;

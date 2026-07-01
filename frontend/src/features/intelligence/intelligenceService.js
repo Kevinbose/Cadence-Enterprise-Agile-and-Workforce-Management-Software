@@ -17,13 +17,26 @@ intelligenceApi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export const fetchWorkforceSummaryRequest = async () => {
-  const { data } = await intelligenceApi.get('/intelligence/workforce');
+/* Backward-compatible: year/quarter are optional. When omitted, the backend
+   returns full-history data identical to the pre-temporal version. */
+export const fetchWorkforceSummaryRequest = async ({ year, quarter } = {}) => {
+  const params = {};
+  if (year)    params.year    = year;
+  if (quarter) params.quarter = quarter;
+  const { data } = await intelligenceApi.get('/intelligence/workforce', { params });
   return data;
 };
 
-export const fetchEmployeeDossierRequest = async (userId) => {
-  const { data } = await intelligenceApi.get(`/intelligence/dossier/${userId}`);
+export const fetchEmployeeDossierRequest = async ({ userId, year, quarter } = {}) => {
+  const params = {};
+  if (year)    params.year    = year;
+  if (quarter) params.quarter = quarter;
+  const { data } = await intelligenceApi.get(`/intelligence/dossier/${userId}`, { params });
+  return data;
+};
+
+export const fetchYearlyAppraisalRequest = async (year) => {
+  const { data } = await intelligenceApi.get('/intelligence/appraisal', { params: { year } });
   return data;
 };
 

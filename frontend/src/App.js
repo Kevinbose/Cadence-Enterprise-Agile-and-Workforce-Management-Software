@@ -15,6 +15,7 @@ import ManagerHub from './pages/ManagerHub';
 import TempManagerPortal from './pages/TempManagerPortal';
 import SuperAdminPortal from './pages/SuperAdmin/SuperAdminPortal';
 import Profile from './pages/Profile';
+import AppraisalEngine from './pages/AppraisalEngine';
 
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
@@ -176,6 +177,15 @@ function App() {
             element={
               <ProtectedWrapper allowedRoles={['Admin/Manager']}>
                 <TempManagerPortal />
+              </ProtectedWrapper>
+            }
+          />
+
+          <Route
+            path="/appraisal-engine"
+            element={
+              <ProtectedWrapper allowedRoles={['Admin/Manager']}>
+                <AppraisalEngine />
               </ProtectedWrapper>
             }
           />

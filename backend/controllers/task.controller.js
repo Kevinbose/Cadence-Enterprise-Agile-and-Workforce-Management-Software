@@ -57,6 +57,8 @@ const serializeTask = (task) => ({
   assigneeId: task.assigneeId,
   sprintId: task.sprintId,
   parentId: task.parentId,
+  originalSprintId: task.originalSprintId ?? null,
+  rolloverCount: task.rolloverCount ?? 0,
   commentCount: task.Comments ? task.Comments.length : 0,
   assignee: task.Assignee
     ? {

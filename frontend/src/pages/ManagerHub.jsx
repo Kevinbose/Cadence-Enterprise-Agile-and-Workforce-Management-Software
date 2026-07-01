@@ -16,16 +16,19 @@ import {
   ThumbsDown,
   Calendar,
   ShieldCheck,
+  ChevronDown,
+  Filter,
 } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 import {
   fetchWorkforceSummary,
   fetchEmployeeDossier,
   clearDossier,
+  setActiveYear,
+  setActiveQuarter,
 } from '../features/intelligence/intelligenceSlice';
 
 /* ─── Avatar color palette ────────────────────────────────────────────────── */
-
 const AVATAR_PALETTE = [
   'from-blue-500 to-indigo-600',
   'from-teal-500 to-emerald-600',
@@ -40,6 +43,24 @@ const avatarGradient = (name = '') => {
   const idx = (name.charCodeAt(0) || 0) % AVATAR_PALETTE.length;
   return AVATAR_PALETTE[idx];
 };
+
+/* ── Available years for the time-machine filter ─────────────────────────── */
+const AVAILABLE_YEARS = [
+  new Date().getFullYear() - 2,
+  new Date().getFullYear() - 1,
+  new Date().getFullYear(),
+];
+
+const QUARTERS = [
+  { value: 'Q1', label: 'Q1 (Jan–Mar)' },
+  { value: 'Q2', label: 'Q2 (Apr–Jun)' },
+  { value: 'Q3', label: 'Q3 (Jul–Sep)' },
+  { value: 'Q4', label: 'Q4 (Oct–Dec)' },
+];
+
+/* ── Shared dropdown style ───────────────────────────────────────────────── */
+const dropdownCls =
+  'appearance-none rounded-xl border border-[#DFE1E6] bg-white py-2 pl-3.5 pr-8 text-xs font-semibold text-[#172B4D] focus:border-[#0A89CD] focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-150 cursor-pointer';
 
 /* ── Diff entry formatted like a high-end IDE Git diff viewer ──────────── */
 const DiffEntry = ({ entry }) => {
@@ -222,8 +243,8 @@ const AnomalyRow = ({ a }) => {
   );
 };
 
-/* ── Employee Dossier Slide-over Drawer with gauge overlays ────────────── */
-const DossierDrawer = ({ onClose }) => {
+/* ── Employee Dossier Slide-over Drawer ─────────────────────────────────── */
+const DossierDrawer = ({ onClose, activeYear, activeQuarter }) => {
   const { selectedDossier, isDossierLoading } = useSelector((s) => s.intelligence);
 
   if (!selectedDossier && !isDossierLoading) return null;
@@ -232,6 +253,13 @@ const DossierDrawer = ({ onClose }) => {
   const diffs = selectedDossier?.auditDiffs || [];
   const anomalies = selectedDossier?.anomalies || [];
   const attendanceHistory = selectedDossier?.attendanceHistory || [];
+  const meta = selectedDossier?.meta;
+
+  const periodLabel = meta?.quarter
+    ? `${QUARTERS.find(q => q.value === meta.quarter)?.label || meta.quarter} ${meta.year}`
+    : meta?.year
+    ? `Full Year ${meta.year}`
+    : 'All Time';
 
   return (
     <div className="fixed inset-0 z-50 flex overflow-hidden" aria-modal="true">
@@ -253,6 +281,11 @@ const DossierDrawer = ({ onClose }) => {
               <div>
                 <h2 className="text-sm font-extrabold text-[#172B4D] leading-snug">{emp?.name || '—'}</h2>
                 <p className="text-[11px] text-[#5E6C84] font-medium mt-0.5">{emp?.email || ''}</p>
+                {/* Period scope badge */}
+                <span className="inline-flex items-center gap-1 mt-1.5 rounded-full bg-blue-50 border border-blue-200/60 text-[#0052CC] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider">
+                  <Filter className="h-2.5 w-2.5" />
+                  {periodLabel}
+                </span>
               </div>
             </div>
             <button
@@ -283,7 +316,7 @@ const DossierDrawer = ({ onClose }) => {
               </h3>
               {diffs.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[#DFE1E6] bg-slate-50/30 p-6 text-center text-xs text-[#5E6C84] font-semibold">
-                  No title or description changes on record for this user.
+                  No title or description changes on record for this period.
                 </div>
               ) : (
                 <div className="space-y-1 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
@@ -305,7 +338,7 @@ const DossierDrawer = ({ onClose }) => {
               </h3>
               {anomalies.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[#DFE1E6] bg-slate-50/30 p-6 text-center text-xs text-[#5E6C84] font-semibold">
-                  No auto-closed sessions or absent logs on record.
+                  No auto-closed sessions or absent logs in this period.
                 </div>
               ) : (
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
@@ -363,7 +396,7 @@ const DossierDrawer = ({ onClose }) => {
               </h3>
               {attendanceHistory.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[#DFE1E6] bg-slate-50/30 p-6 text-center text-xs text-[#5E6C84] font-semibold">
-                  No attendance history logs found.
+                  No attendance history logs found for this period.
                 </div>
               ) : (
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
@@ -385,7 +418,7 @@ const DossierDrawer = ({ onClose }) => {
               </h3>
               {!selectedDossier?.previousComments || selectedDossier.previousComments.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[#DFE1E6] bg-slate-50/30 p-6 text-center text-xs text-[#5E6C84] font-semibold">
-                  No evaluations on record from completed sprints.
+                  No evaluations on record from completed sprints in this period.
                 </div>
               ) : (
                 <div className="space-y-3.5">
@@ -417,7 +450,6 @@ const DossierDrawer = ({ onClose }) => {
                         {sprintComments.map((c) => {
                           const isPositive = c.evaluationTier === 'Positive';
 
-                          // Dynamically build path to avoid trailing arrows
                           const lineagePath = [];
                           if (c.hierarchy?.epic) lineagePath.push({ ...c.hierarchy.epic, style: 'bg-[#EAE6FF] text-[#5243AA] border-[#C0B6F2]/30' });
                           if (c.hierarchy?.story) lineagePath.push({ ...c.hierarchy.story, style: 'bg-[#E3FCEF] text-[#006644] border-[#ABF5D1]/30' });
@@ -493,19 +525,20 @@ const DossierDrawer = ({ onClose }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MAIN PAGE COMPONENT — Glassmorphism Dashboard Cockpit
+   MAIN PAGE COMPONENT — Manager Hub Quarterly Tactical Cockpit
    ═══════════════════════════════════════════════════════════════════════════ */
 const ManagerHub = () => {
   const dispatch = useDispatch();
-  const { workforce, isLoading, selectedDossier, error } =
+  const { workforce, isLoading, selectedDossier, error, activeYear, activeQuarter } =
     useSelector((s) => s.intelligence);
 
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
 
+  // Fetch workforce whenever year or quarter changes
   useEffect(() => {
-    dispatch(fetchWorkforceSummary());
-  }, [dispatch]);
+    dispatch(fetchWorkforceSummary({ year: activeYear, quarter: activeQuarter }));
+  }, [dispatch, activeYear, activeQuarter]);
 
   /* filtered workforce logic */
   const filtered = useMemo(() => {
@@ -521,13 +554,23 @@ const ManagerHub = () => {
 
   const handleRowClick = (emp) => {
     setSelectedUserId(emp.id);
-    dispatch(fetchEmployeeDossier(emp.id));
+    dispatch(fetchEmployeeDossier({ userId: emp.id, year: activeYear, quarter: activeQuarter }));
   };
 
   const handleCloseDrawer = () => {
     setSelectedUserId(null);
     dispatch(clearDossier());
   };
+
+  const handleYearChange = (e) => {
+    dispatch(setActiveYear(Number(e.target.value)));
+  };
+
+  const handleQuarterChange = (e) => {
+    dispatch(setActiveQuarter(e.target.value));
+  };
+
+  const quarterLabel = QUARTERS.find(q => q.value === activeQuarter)?.label || activeQuarter;
 
   return (
     <Layout pageTitle="Manager Hub — Workforce Intelligence Cockpit">
@@ -540,7 +583,7 @@ const ManagerHub = () => {
           </div>
         )}
 
-        {/* ── COCKPIT HEADER: Light gradient dashboard cockpit ────────────────── */}
+        {/* ── COCKPIT HEADER ─────────────────────────────────────────────── */}
         <div
           className="relative rounded-2xl border border-[#DFE1E6]/75 bg-gradient-to-r from-blue-50/70 via-indigo-50/30 to-slate-50/50 p-6 px-8 shadow-sm overflow-hidden"
         >
@@ -549,8 +592,8 @@ const ManagerHub = () => {
           <div className="absolute -bottom-10 left-1/3 w-36 h-36 rounded-full bg-purple-100/30 blur-2xl pointer-events-none" />
 
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Title */}
             <div className="flex items-center gap-4">
-              {/* Icon badge */}
               <div
                 className="w-12 h-12 rounded-xl flex-shrink-0 bg-gradient-to-br from-[#0A89CD]/15 to-[#0747A6]/15 ring-1 ring-blue-500/10 shadow-sm flex items-center justify-center"
               >
@@ -573,31 +616,71 @@ const ManagerHub = () => {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  {workforce.length} active employee profiles aggregated in real-time
+                  {workforce.length} active employee profiles · {quarterLabel} {activeYear}
                 </p>
               </div>
             </div>
 
-            {/* search input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#97A0AF]" />
-              <input
-                type="text"
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-[#DFE1E6] bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-[#172B4D] placeholder-[#97A0AF] focus:border-[#0A89CD] focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-150"
-              />
+            {/* Controls: Year + Quarter + Search */}
+            <div className="flex flex-wrap items-center gap-2.5">
+
+              {/* ── TIME MACHINE FILTERS ─────────────────────────────── */}
+              <div className="flex items-center gap-1.5 bg-white/60 border border-[#DFE1E6]/80 rounded-xl px-3 py-1.5 shadow-sm">
+                <ChevronDown className="h-3 w-3 text-[#5E6C84] flex-shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#5E6C84] mr-1">Period</span>
+                <div className="relative">
+                  <select
+                    id="manager-hub-year"
+                    value={activeYear}
+                    onChange={handleYearChange}
+                    className={dropdownCls}
+                    style={{ minWidth: '72px' }}
+                  >
+                    {AVAILABLE_YEARS.map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#5E6C84]" />
+                </div>
+
+                <div className="relative">
+                  <select
+                    id="manager-hub-quarter"
+                    value={activeQuarter}
+                    onChange={handleQuarterChange}
+                    className={dropdownCls}
+                    style={{ minWidth: '120px' }}
+                  >
+                    {QUARTERS.map(q => (
+                      <option key={q.value} value={q.value}>{q.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#5E6C84]" />
+                </div>
+              </div>
+
+              {/* search input */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#97A0AF]" />
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full rounded-xl border border-[#DFE1E6] bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-[#172B4D] placeholder-[#97A0AF] focus:border-[#0A89CD] focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-150"
+                  style={{ minWidth: '190px' }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── WORKFORCE GRID TABLE CARD ────────────────────────────────────────── */}
+        {/* ── WORKFORCE GRID TABLE CARD ─────────────────────────────────── */}
         <div className="rounded-2xl border border-[#DFE1E6]/75 bg-white shadow-sm overflow-hidden flex flex-col">
           {isLoading ? (
             <div className="flex items-center justify-center py-20 flex-col gap-3">
               <Loader2 className="h-7 w-7 animate-spin text-[#0A89CD]" />
-              <span className="text-xs font-semibold text-[#5E6C84]">Querying SQL telemetry...</span>
+              <span className="text-xs font-semibold text-[#5E6C84]">Querying SQL telemetry for {quarterLabel} {activeYear}...</span>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-20 px-4">
@@ -677,7 +760,11 @@ const ManagerHub = () => {
 
       {/* Slide-out drawer details page */}
       {(selectedDossier || selectedUserId) && (
-        <DossierDrawer onClose={handleCloseDrawer} />
+        <DossierDrawer
+          onClose={handleCloseDrawer}
+          activeYear={activeYear}
+          activeQuarter={activeQuarter}
+        />
       )}
     </Layout>
   );

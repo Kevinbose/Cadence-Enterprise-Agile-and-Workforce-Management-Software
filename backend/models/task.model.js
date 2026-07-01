@@ -106,6 +106,23 @@ const Task = sequelize.define(
       comment:
         'Self-referential link pointing to parent Epic/Story/Task for hierarchies',
     },
+    // ── Sprint Rollover latch fields (Module: Automated Sprint Rollover) ──────
+    originalSprintId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // null = never rolled over
+      field: 'original_sprint_id',
+      references: { model: 'sprints', key: 'id' },
+      comment:
+        'Immutable latch: the sprint this task was FIRST assigned to. Null until first rollover.',
+    },
+    rolloverCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: 'rollover_count',
+      comment:
+        'Incremented each time this task is migrated to a new sprint due to incompletion.',
+    },
   },
   {
     tableName: 'tasks',
@@ -128,6 +145,9 @@ const Task = sequelize.define(
       },
       {
         fields: ['parent_id'],
+      },
+      {
+        fields: ['original_sprint_id'],
       },
       // Composite index for Kanban board queries to retrieve ordered cards efficiently by status
       {

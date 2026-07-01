@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   AlertTriangle,
@@ -6,18 +6,12 @@ import {
   Loader2,
   Search,
   Shield,
-  TrendingDown,
   Users,
   X,
   Clock,
   GitCommit,
-  Activity,
   Award,
-  Sparkles,
-  BarChart3,
   Fingerprint,
-  RotateCcw,
-  CheckCircle,
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
@@ -31,53 +25,7 @@ import {
   clearDossier,
 } from '../features/intelligence/intelligenceSlice';
 
-/* ── Trust score colour scheme ─────────────────────────────────────────── */
-const trustBadge = (score) => {
-  if (score >= 90) return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 shadow-sm shadow-emerald-500/5';
-  if (score >= 75) return 'bg-amber-500/10 text-amber-600 border border-amber-500/30 shadow-sm shadow-amber-500/5';
-  return 'bg-rose-500/10 text-rose-600 border border-rose-500/30 shadow-sm shadow-rose-500/5 animate-pulse';
-};
 
-const trustLabel = (score) => {
-  if (score >= 90) return 'Elite Performance';
-  if (score >= 75) return 'Optimal Health';
-  return 'At Risk / Action Required';
-};
-
-/* ── Punctuality dot with premium ping animation ───────────────────────── */
-const PunctualityDot = ({ ari }) => {
-  const colour =
-    ari >= 90 ? 'bg-emerald-500' : ari >= 75 ? 'bg-amber-500' : 'bg-rose-500';
-  return (
-    <span className="absolute bottom-0 right-0 flex h-3 w-3">
-      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${colour}`} />
-      <span className={`relative inline-flex rounded-full h-3 w-3 border-2 border-white ${colour}`} />
-    </span>
-  );
-};
-
-/* ── Horizontal gauge bar with glass container and gradient filling ────── */
-const GaugeBar = ({ label, value, colorClass, barColorStyle }) => (
-  <div className="group/gauge transition-all duration-200">
-    <div className="flex items-center justify-between mb-1.5">
-      <span className="text-[10px] font-bold text-[#42526E] uppercase tracking-widest group-hover/gauge:text-[#0747A6] transition-colors">
-        {label}
-      </span>
-      <span className="text-xs font-extrabold text-[#172B4D] bg-[#FAFBFC] px-1.5 py-0.5 rounded border border-[#DFE1E6]">
-        {value}%
-      </span>
-    </div>
-    <div className="h-3 w-full rounded-full bg-slate-100/90 border border-slate-200/50 overflow-hidden p-[2px]">
-      <div
-        className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
-        style={{
-          width: `${Math.min(100, value)}%`,
-          background: barColorStyle || 'linear-gradient(to right, #0A89CD, #0747A6)'
-        }}
-      />
-    </div>
-  </div>
-);
 
 /* ── Diff entry formatted like a high-end IDE Git diff viewer ──────────── */
 const DiffEntry = ({ entry }) => {
@@ -259,7 +207,6 @@ const DossierDrawer = ({ onClose }) => {
   if (!selectedDossier && !isDossierLoading) return null;
 
   const emp = selectedDossier?.employee;
-  const kpis = selectedDossier?.kpis || {};
   const diffs = selectedDossier?.auditDiffs || [];
   const anomalies = selectedDossier?.anomalies || [];
   const attendanceHistory = selectedDossier?.attendanceHistory || [];
@@ -302,45 +249,6 @@ const DossierDrawer = ({ onClose }) => {
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 scrollbar-thin">
-            {/* KPI gauges section */}
-            <section className="bg-slate-50/50 rounded-2xl p-5 border border-slate-200/50">
-              <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-[#6B778C] mb-4 flex items-center gap-1.5">
-                <Fingerprint className="h-4 w-4 text-[#0A89CD]" />
-                Security Risk & Reliability Index
-              </h3>
-              <div className="space-y-4">
-                <GaugeBar
-                  label="Attendance Reliability (ARI)"
-                  value={kpis.ari ?? 0}
-                  barColorStyle="linear-gradient(to right, #0A89CD, #0747A6)"
-                />
-                <GaugeBar
-                  label="First-Time Pass Rate (FTPR)"
-                  value={kpis.ftpr ?? 0}
-                  barColorStyle="linear-gradient(to right, #36A15D, #2E8C50)"
-                />
-                <GaugeBar
-                  label="Unified Trust Score"
-                  value={kpis.trustScore ?? 0}
-                  barColorStyle={kpis.trustScore >= 90 ? 'linear-gradient(to right, #10B981, #059669)' : kpis.trustScore >= 75 ? 'linear-gradient(to right, #F59E0B, #D97706)' : 'linear-gradient(to right, #EF4444, #DC2626)'}
-                />
-              </div>
-
-              {/* Quick Counter Chips */}
-              <div className="mt-5 grid grid-cols-3 gap-3.5">
-                {[
-                  { label: 'Work Days', value: kpis.shiftDays ?? 0, desc: 'Logged' },
-                  { label: 'Present Days', value: kpis.presentDays ?? 0, desc: 'Punched' },
-                  { label: 'Tamper Logs', value: kpis.gtp ?? 0, desc: 'Strikes', alert: (kpis.gtp ?? 0) > 0 },
-                ].map(({ label, value, desc, alert }) => (
-                  <div key={label} className={`rounded-xl border p-3 text-center transition-all bg-white hover:shadow-sm ${alert ? 'border-rose-200/60 bg-rose-50/10' : 'border-slate-200/50'}`}>
-                    <p className={`text-xl font-extrabold ${alert ? 'text-rose-600' : 'text-[#172B4D]'}`}>{value}</p>
-                    <p className="text-[10px] font-bold text-[#42526E] uppercase tracking-wider mt-0.5">{label}</p>
-                    <p className="text-[9px] text-[#6B778C] font-semibold mt-px">{desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
 
             {/* Scope change git-diff feed */}
             <section>
@@ -550,68 +458,23 @@ const DossierDrawer = ({ onClose }) => {
   );
 };
 
-/* ── Anomaly Ticker item ── */
-const TickerItem = ({ event }) => {
-  const config = {
-    LOW_SCORE: { icon: TrendingDown, colour: 'text-rose-500 border-rose-500/20 bg-rose-500/[0.04]', pulse: 'bg-rose-500' },
-    TAMPER: { icon: AlertTriangle, colour: 'text-amber-500 border-amber-500/20 bg-amber-500/[0.04]', pulse: 'bg-amber-500' },
-    ATTENDANCE: { icon: Clock, colour: 'text-blue-500 border-blue-500/20 bg-blue-500/[0.04]', pulse: 'bg-blue-500' },
-  }[event.type] || { icon: Activity, colour: 'text-slate-500 border-slate-200 bg-slate-50/50', pulse: 'bg-slate-400' };
 
-  const Icon = config.icon;
-
-  return (
-    <div className={`group flex items-start gap-3 rounded-xl border p-3.5 mb-3 transition-all duration-300 hover:scale-[1.01] hover:shadow-sm ${config.colour}`}>
-      <div className="relative mt-0.5 flex-shrink-0">
-        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-40 ${config.pulse}`} />
-        <div className={`relative flex h-8 w-8 items-center justify-center rounded-xl bg-white border border-slate-100 shadow-sm text-inherit`}>
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between mb-0.5">
-          <span className="text-[9px] font-bold uppercase tracking-wider opacity-85">
-            {event.label}
-          </span>
-          <span className="text-[9px] font-bold opacity-60">LIVE</span>
-        </div>
-        <p className="text-xs font-semibold text-[#172B4D] leading-snug group-hover:text-[#0747A6] transition-colors">
-          {event.text}
-        </p>
-      </div>
-    </div>
-  );
-};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN PAGE COMPONENT — Glassmorphism Dashboard Cockpit
    ═══════════════════════════════════════════════════════════════════════════ */
 const ManagerHub = () => {
   const dispatch = useDispatch();
-  const { workforce, tickerFeed, isLoading, selectedDossier, error } =
+  const { workforce, isLoading, selectedDossier, error } =
     useSelector((s) => s.intelligence);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const tickerRef = useRef(null);
 
   useEffect(() => {
     dispatch(fetchWorkforceSummary());
   }, [dispatch]);
-
-  /* Smooth auto-scroll ticker for active stream look */
-  useEffect(() => {
-    if (!tickerFeed.length || !tickerRef.current) return;
-    const el = tickerRef.current;
-    let pos = 0;
-    const id = setInterval(() => {
-      pos += 0.5;
-      if (pos >= el.scrollHeight - el.clientHeight) pos = 0;
-      el.scrollTop = pos;
-    }, 30);
-    return () => clearInterval(id);
-  }, [tickerFeed]);
 
   /* filtered workforce logic */
   const filtered = useMemo(() => {
@@ -727,24 +590,12 @@ const ManagerHub = () => {
               </div>
             ) : (
               <div className="overflow-auto h-full scrollbar-thin">
-                <table className="w-full min-w-[700px] text-sm text-left border-collapse">
+                <table className="w-full text-sm text-left border-collapse">
                   <thead>
                     <tr className="border-b border-[#DFE1E6]/60 bg-[#FAFBFC] sticky top-0 z-10">
-                      {[
-                        { label: 'Employee', width: '25%' },
-                        { label: 'Attendance (ARI)', width: '22%' },
-                        { label: 'Pass Rate (FTPR)', width: '22%' },
-                        { label: 'Tamper Strikes', width: '13%' },
-                        { label: 'Unified Trust Score', width: '18%' }
-                      ].map((col) => (
-                        <th
-                          key={col.label}
-                          style={{ width: col.width }}
-                          className="px-5 py-3.5 text-[9px] font-extrabold uppercase tracking-widest text-[#6B778C]"
-                        >
-                          {col.label}
-                        </th>
-                      ))}
+                      <th className="px-5 py-3.5 text-[9px] font-extrabold uppercase tracking-widest text-[#6B778C]">
+                        Employee
+                      </th>
                       <th className="px-5 py-3.5 w-[5%]"></th>
                     </tr>
                   </thead>
@@ -763,7 +614,6 @@ const ManagerHub = () => {
                               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#0A89CD]/10 to-[#0747A6]/10 text-[#0747A6] text-xs font-black ring-1 ring-blue-500/10 shadow-sm group-hover:scale-105 transition-transform">
                                 {emp.name.charAt(0)}
                               </div>
-                              <PunctualityDot ari={emp.ari} />
                             </div>
                             <div className="min-w-0">
                               <p className="font-bold text-[#172B4D] group-hover:text-[#0747A6] transition-colors truncate text-xs sm:text-sm">
@@ -774,66 +624,6 @@ const ManagerHub = () => {
                               </p>
                             </div>
                           </div>
-                        </td>
-
-                        {/* Attendance Index (ARI) */}
-                        <td className="px-5 py-4">
-                          <div>
-                            <div className="flex items-center justify-between mb-1 text-[10px] font-bold">
-                              <span className={emp.ari >= 90 ? 'text-emerald-600' : emp.ari >= 75 ? 'text-amber-600' : 'text-rose-600'}>
-                                {emp.ari}%
-                              </span>
-                            </div>
-                            <div className="h-2 w-32 rounded-full bg-slate-100 border border-slate-200/50 overflow-hidden p-[1px]">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${Math.min(100, emp.ari)}%`,
-                                  background: emp.ari >= 90 ? 'linear-gradient(to right, #10B981, #059669)' : emp.ari >= 75 ? 'linear-gradient(to right, #F59E0B, #D97706)' : 'linear-gradient(to right, #EF4444, #DC2626)'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* First-Time Pass Rate (FTPR) */}
-                        <td className="px-5 py-4">
-                          <div>
-                            <div className="flex items-center justify-between mb-1 text-[10px] font-bold">
-                              <span className={emp.ftpr >= 90 ? 'text-emerald-600' : emp.ftpr >= 75 ? 'text-amber-600' : 'text-rose-600'}>
-                                {emp.ftpr}%
-                              </span>
-                            </div>
-                            <div className="h-2 w-32 rounded-full bg-slate-100 border border-slate-200/50 overflow-hidden p-[1px]">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${Math.min(100, emp.ftpr)}%`,
-                                  background: emp.ftpr >= 90 ? 'linear-gradient(to right, #10B981, #059669)' : emp.ftpr >= 75 ? 'linear-gradient(to right, #F59E0B, #D97706)' : 'linear-gradient(to right, #EF4444, #DC2626)'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Goalpost Strikes */}
-                        <td className="px-5 py-4">
-                          {emp.gtp > 0 ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 text-[10px] font-extrabold text-rose-600 animate-pulse">
-                              <AlertTriangle className="h-3 w-3" /> {emp.gtp} Strikes
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 border border-slate-200/40 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                              <CheckCircle className="h-3 w-3 text-emerald-500" /> Safe
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Trust Score */}
-                        <td className="px-5 py-4">
-                          <span className={`rounded-xl px-2.5 py-1.5 text-xs font-bold leading-none inline-block ${trustBadge(emp.trustScore)}`}>
-                            {emp.trustScore} · {trustLabel(emp.trustScore).split(' ')[0]}
-                          </span>
                         </td>
 
                         {/* CTA Arrow */}
@@ -851,90 +641,7 @@ const ManagerHub = () => {
           </div>
         </div>
 
-        {/* ── RIGHT PANE: Real-time Anomaly stream (25%) ────────────────── */}
-        <div className="w-full xl:w-80 flex-shrink-0 flex flex-col gap-5">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4.5 w-4.5 text-rose-500" />
-            <h2 className="text-sm font-extrabold text-[#172B4D] tracking-tight">Workforce Anomaly Stream</h2>
-            {tickerFeed.length > 0 && (
-              <span className="ml-auto rounded-full bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[9px] font-extrabold text-rose-600">
-                {tickerFeed.length} EVENTS
-              </span>
-            )}
-          </div>
 
-          {/* Scrolling Feed Container with gradient mask */}
-          <div className="relative flex-1 min-h-[220px]" style={{ maxHeight: 'calc(100vh - 350px)' }}>
-            <div
-              ref={tickerRef}
-              className="w-full h-full overflow-y-auto rounded-2xl border border-slate-200/60 bg-white/60 p-4 scrollbar-none"
-            >
-              {isLoading ? (
-                <div className="flex h-32 items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#0A89CD]" />
-                  <span className="text-xs font-semibold text-[#6B778C]">Connecting to stream...</span>
-                </div>
-              ) : tickerFeed.length === 0 ? (
-                <div className="flex h-44 flex-col items-center justify-center text-center text-[#6B778C] px-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 mb-3 border border-emerald-100 shadow-sm">
-                    <CheckCircle className="h-5 w-5" />
-                  </div>
-                  <p className="text-xs font-bold text-[#172B4D]">Telemetry Normal</p>
-                  <p className="text-[10px] text-[#6B778C] mt-0.5">No anomalies detected in timesheet or Git log histories.</p>
-                </div>
-              ) : (
-                tickerFeed.map((event) => <TickerItem key={event.id} event={event} />)
-              )}
-            </div>
-          </div>
-
-          {/* Quick Metrics KPI cards */}
-          {!isLoading && workforce.length > 0 && (
-            <div className="grid grid-cols-2 gap-3.5">
-              {[
-                {
-                  label: 'At Risk',
-                  value: workforce.filter((e) => e.trustScore < 75).length,
-                  icon: AlertTriangle,
-                  colorClass: 'text-rose-600',
-                  bgClass: 'bg-rose-500/[0.03] border-rose-500/10 hover:border-rose-500/30 shadow-rose-500/5',
-                },
-                {
-                  label: 'Elite Users',
-                  value: workforce.filter((e) => e.trustScore >= 90).length,
-                  icon: Award,
-                  colorClass: 'text-emerald-600',
-                  bgClass: 'bg-emerald-500/[0.03] border-emerald-500/10 hover:border-emerald-500/30 shadow-emerald-500/5',
-                },
-                {
-                  label: 'Avg ARI',
-                  value: `${Math.round(workforce.reduce((s, e) => s + e.ari, 0) / workforce.length)}%`,
-                  icon: Clock,
-                  colorClass: 'text-blue-600',
-                  bgClass: 'bg-blue-500/[0.03] border-blue-500/10 hover:border-blue-500/30 shadow-blue-500/5',
-                },
-                {
-                  label: 'Avg FTPR',
-                  value: `${Math.round(workforce.reduce((s, e) => s + e.ftpr, 0) / workforce.length)}%`,
-                  icon: BarChart3,
-                  colorClass: 'text-violet-600',
-                  bgClass: 'bg-violet-500/[0.03] border-violet-500/10 hover:border-violet-500/30 shadow-violet-500/5',
-                },
-              ].map((card) => (
-                <div
-                  key={card.label}
-                  className={`rounded-2xl border bg-white p-3.5 text-center transition-all duration-300 hover:scale-[1.03] hover:shadow-md cursor-default ${card.bgClass}`}
-                >
-                  <div className={`mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-slate-100 shadow-sm mb-1.5 ${card.colorClass}`}>
-                    <card.icon className="h-4 w-4" />
-                  </div>
-                  <p className={`text-base font-black leading-none ${card.colorClass}`}>{card.value}</p>
-                  <p className="text-[9px] font-bold text-[#6B778C] uppercase tracking-widest mt-1.5">{card.label}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Slide-out drawer details page */}

@@ -10,7 +10,6 @@ import {
   X,
   Clock,
   GitCommit,
-  Award,
   Fingerprint,
   MessageSquare,
   ThumbsUp,
@@ -469,7 +468,6 @@ const ManagerHub = () => {
     useSelector((s) => s.intelligence);
 
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
@@ -485,10 +483,8 @@ const ManagerHub = () => {
         (e) => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q)
       );
     }
-    if (filter === 'risk') list = list.filter((e) => e.trustScore < 75);
-    if (filter === 'elite') list = list.filter((e) => e.trustScore >= 90);
     return list;
-  }, [workforce, search, filter]);
+  }, [workforce, search]);
 
   const handleRowClick = (emp) => {
     setSelectedUserId(emp.id);
@@ -546,31 +542,6 @@ const ManagerHub = () => {
                 className="w-full rounded-xl border border-[#DFE1E6]/80 bg-white/70 py-2.5 pl-10 pr-4 text-xs font-semibold text-[#172B4D] placeholder-[#97A0AF] backdrop-blur-sm transition-all focus:border-[#0A89CD] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0A89CD]/10 hover:border-[#97A0AF]/50"
               />
             </div>
-          </div>
-
-          {/* filter chips */}
-          <div className="flex gap-2">
-            {[
-              { key: 'all', label: 'All Employees', count: workforce.length, icon: Users },
-              { key: 'risk', label: 'High Risk Level (<75)', count: workforce.filter((e) => e.trustScore < 75).length, icon: AlertTriangle },
-              { key: 'elite', label: 'Elite Performers (≥90)', count: workforce.filter((e) => e.trustScore >= 90).length, icon: Award },
-            ].map(({ key, label, count, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border hover:scale-[1.01] active:scale-[0.98] ${filter === key
-                  ? 'bg-gradient-to-r from-[#0747A6] to-[#0A89CD] text-white border-transparent shadow-md shadow-blue-500/10'
-                  : 'bg-white text-[#42526E] border-[#DFE1E6]/70 hover:border-[#0A89CD] hover:text-[#0A89CD]'
-                  }`}
-              >
-                <Icon className="h-3.5 w-3.5 opacity-80" />
-                {label}
-                <span className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${filter === key ? 'bg-white/20 text-white' : 'bg-slate-100 text-[#42526E]'
-                  }`}>
-                  {count}
-                </span>
-              </button>
-            ))}
           </div>
 
           {/* Main Grid Table Container */}

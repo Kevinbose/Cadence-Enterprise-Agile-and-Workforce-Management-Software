@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 import EditSprintModal from '../components/Sprints/EditSprintModal';
+import { syncUserSession } from '../features/auth/authSlice';
 import {
   fetchAllSprints,
   createSprint,
@@ -385,6 +386,7 @@ const SprintDirectory = () => {
   useEffect(() => {
     dispatch(fetchAllSprints());
     dispatch(fetchEligibleAssignees());
+    dispatch(syncUserSession());
   }, [dispatch]);
 
   const handleStart = async (sprintId) => {
@@ -426,7 +428,10 @@ const SprintDirectory = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => dispatch(fetchAllSprints())}
+              onClick={() => {
+                dispatch(fetchAllSprints());
+                dispatch(syncUserSession());
+              }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#DFE1E6] bg-white px-3.5 py-2 text-xs font-semibold text-[#42526E] shadow-sm transition-all hover:border-[#0A89CD]/30 hover:shadow-md"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-[#0A89CD]' : 'text-[#97A0AF]'}`} />

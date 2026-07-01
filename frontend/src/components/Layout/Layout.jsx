@@ -48,6 +48,10 @@ const Layout = ({ children, pageTitle = 'Dashboard' }) => {
 
   useEffect(() => {
     dispatch(syncUserSession());
+    const interval = setInterval(() => {
+      dispatch(syncUserSession());
+    }, 10000);
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   useEffect(() => {

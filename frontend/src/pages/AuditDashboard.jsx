@@ -229,7 +229,7 @@ const AuditDashboard = () => {
   const { user } = useSelector((s) => s.auth);
   const { sprints, isLoading: sprintsLoading } = useSelector((s) => s.sprint);
   const { logs, selectedSprint, isLoading: logsLoading, error } = useSelector((s) => s.audit);
-  const isTemporalSM = useSelector((s) => s.kanban.isTemporalScrumMaster);
+  const isTemporalSM = user?.isTemporalScrumMaster === true;
 
   const isManager = user?.systemRole === 'Admin/Manager';
   const canAccess = isManager || isTemporalSM;

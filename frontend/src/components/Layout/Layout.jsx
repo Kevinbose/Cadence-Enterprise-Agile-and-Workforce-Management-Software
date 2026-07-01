@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import GlobalHeaderPunch from '../Attendance/GlobalHeaderPunch';
 import RegularizationModal from '../Attendance/RegularizationModal';
-import { logoutUser, fetchCurrentUser } from '../../features/auth/authSlice';
+import { logoutUser, syncUserSession } from '../../features/auth/authSlice';
 import { resetAttendanceState } from '../../features/attendance/attendanceSlice';
 
 /**
@@ -47,7 +47,7 @@ const Layout = ({ children, pageTitle = 'Dashboard' }) => {
   };
 
   useEffect(() => {
-    dispatch(fetchCurrentUser());
+    dispatch(syncUserSession());
   }, [dispatch]);
 
   useEffect(() => {

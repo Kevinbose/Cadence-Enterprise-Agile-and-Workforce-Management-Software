@@ -25,6 +25,7 @@ const resolveTemporalScrumMaster = async (userId) => {
       scrumMasterId: userId,
       startDate: { [Op.lte]: todayIST },
       endDate: { [Op.gte]: todayIST },
+      status: { [Op.ne]: 'COMPLETED' },
     },
   });
 

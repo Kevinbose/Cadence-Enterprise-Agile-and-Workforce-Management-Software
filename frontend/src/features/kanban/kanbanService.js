@@ -57,4 +57,13 @@ export const deleteIssueRequest = async (id) => {
   return data;
 };
 
+export const bulkAdjudicateRequest = async ({ taskIds, action, comment }) => {
+  const { data } = await kanbanApi.post('/tasks/bulk-adjudicate', {
+    taskIds,
+    action,
+    comment,
+  });
+  return data;
+};
+
 export default kanbanApi;

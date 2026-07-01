@@ -10,6 +10,7 @@ router.use(resolveActiveSprint); // Non-blocking — attaches sprint context
 
 router.post('/', taskController.createIssue);
 router.get('/board', taskController.getSprintBoard);
+router.post('/bulk-adjudicate', taskController.bulkAdjudicate);
 router.patch('/:id/status', taskController.updateTaskStatus);
 router.patch('/:id/reject', taskController.rejectTask);
 router.patch('/:id', taskController.editIssue);

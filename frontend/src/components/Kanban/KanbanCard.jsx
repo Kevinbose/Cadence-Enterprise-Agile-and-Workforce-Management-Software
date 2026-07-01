@@ -46,20 +46,32 @@ const initialsOf = (name) =>
  * Props:
  *   task        — serialized task object
  *   isOwner     — current user is the assignee
- *   isElevated  — current user is SM or Manager
+ *   isElevated  — current user is SM or Manager (or an active Temp Manager)
  *   isFrozen    — sprint is PENDING or COMPLETED; blocks drag/status progression
  *   isArchived  — sprint is COMPLETED; additionally blocks edit and delete
  *   onAdvance   — (task, nextStatus) => void  (direct forward move)
  *   onReview    — (task, mode) => void        (opens adjudication modal)
  *   onEdit      — (task) => void              (opens edit modal)
  *   onDelete    — (task) => void              (opens delete confirm modal)
+ *   isSelected      — this card's id is present in the bulk-adjudication selection set
+ *   onToggleSelect  — (taskId) => void; toggles bulk-select checkbox state
  *   isDragging  — injected by Draggable snapshot
  */
-const KanbanCard = ({ task, isOwner, isElevated, isFrozen, isArchived, onAdvance, onReview, onEdit, onDelete, currentUser, isDragging }) => {
+const KanbanCard = ({ task, isOwner, isElevated, isFrozen, isArchived, onAdvance, onReview, onEdit, onDelete, isSelected, onToggleSelect, currentUser, isDragging }) => {
   const config = TYPE_CONFIG[task.type] || TYPE_CONFIG.Task;
   const assigneeName = task.assignee?.name;
   const isDone = task.status === 'DONE';
   const isCreator = currentUser && task.creatorId === currentUser.id;
+
+  // Bulk-select checkbox is only offered to Managers/Scrum Masters (or an
+  // active Temp Manager — already folded into isElevated on the frontend
+  // since JIT elevation patches systemRole to 'Admin/Manager'), on an
+  // unfrozen (ACTIVE) board, for cards awaiting adjudication.
+  const showBulkCheckbox =
+    isElevated &&
+    !isFrozen &&
+    (task.status === 'IN_REVIEW' || task.status === 'QA_TESTING') &&
+    typeof onToggleSelect === 'function';
 
   // ── Determine the contextual action button ─────────────────────────────────
   // Suppress all movement actions when the board is frozen (sprint is PENDING).
@@ -127,13 +139,36 @@ const KanbanCard = ({ task, isOwner, isElevated, isFrozen, isArchived, onAdvance
         backdrop-blur-sm transition-all duration-250
         ${isDragging
           ? 'rotate-[2deg] scale-[1.04] border-[#0A89CD]/60 shadow-xl shadow-blue-500/15 ring-2 ring-[#0A89CD]/20'
-          : 'border-[#DFE1E6]/80 shadow-sm hover:border-[#0A89CD]/30 hover:shadow-lg hover:shadow-slate-200/60'
+          : isSelected
+            ? 'border-[#0A89CD]/60 shadow-md shadow-blue-500/10 ring-2 ring-[#0A89CD]/40'
+            : 'border-[#DFE1E6]/80 shadow-sm hover:border-[#0A89CD]/30 hover:shadow-lg hover:shadow-slate-200/60'
         }
         ${isDone ? 'opacity-75' : ''}
+        ${showBulkCheckbox ? 'pl-8' : ''}
       `}
     >
       {/* Subtle top accent line */}
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#0A89CD]/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+      {/* Bulk-adjudication checkbox — top-left, Manager/SM/Temp-Manager only,
+          on unfrozen boards, for IN_REVIEW / QA_TESTING cards only. */}
+      {showBulkCheckbox && (
+        <label
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-2.5 top-2.5 z-10 flex h-5 w-5 cursor-pointer items-center justify-center"
+          title={isSelected ? 'Deselect card' : 'Select for bulk adjudication'}
+        >
+          <input
+            type="checkbox"
+            checked={Boolean(isSelected)}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelect(task.id);
+            }}
+            className="h-4 w-4 cursor-pointer rounded border-[#C1C7D0] text-[#0A89CD] focus:ring-2 focus:ring-[#0A89CD]/40 focus:ring-offset-0"
+          />
+        </label>
+      )}
 
       {/* Top-right action cluster: edit / delete (hover) + lock badge (always) */}
       <div className="absolute right-2 top-2 flex items-center gap-0.5">

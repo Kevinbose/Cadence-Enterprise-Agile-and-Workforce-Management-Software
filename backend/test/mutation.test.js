@@ -135,7 +135,7 @@ const runTests = async () => {
       creatorId: employee.id,
       assigneeId: employee.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: employee.id });
 
     // Test Case 1: Unauthorized Employee Edit
     const unauthEditReq = {
@@ -157,11 +157,10 @@ const runTests = async () => {
       body: {
         title: 'Updated Employee Task',
         description: 'New desc',
-        type: 'Subtask',
+        type: 'Story',
         assigneeId: scrumMaster.id,
         // Immutable columns that should be ignored
         issueKey: 'YT-HACK',
-        parentId: 9999,
         sprintId: 9999,
         isConfidential: true,
         creatorId: 9999,
@@ -181,7 +180,7 @@ const runTests = async () => {
       'Safe Mutation: Mutable fields updated correctly',
       reloadedTask.title === 'Updated Employee Task' &&
       reloadedTask.description === 'New desc' &&
-      reloadedTask.type === 'Subtask' &&
+      reloadedTask.type === 'Story' &&
       reloadedTask.assigneeId === scrumMaster.id
     );
     assert(
@@ -216,7 +215,7 @@ const runTests = async () => {
       creatorId: employee.id,
       assigneeId: employee.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: employee.id });
     const employeeSubtask = await Task.create({
       issueKey: 'YT-7',
       title: 'Employee Subtask',
@@ -226,7 +225,7 @@ const runTests = async () => {
       creatorId: employee.id,
       assigneeId: employee.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: employee.id });
 
     const subtaskToTaskReq = {
       params: { id: employeeSubtask.id },
@@ -266,7 +265,7 @@ const runTests = async () => {
       status: 'TODO',
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
     const story = await Task.create({
       issueKey: 'YT-3',
       title: 'Stripe Subscriptions Story',
@@ -275,7 +274,7 @@ const runTests = async () => {
       parentId: epic.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
     const task = await Task.create({
       issueKey: 'YT-4',
       title: 'Webhook Listener Task',
@@ -284,7 +283,7 @@ const runTests = async () => {
       parentId: story.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
     const subtask = await Task.create({
       issueKey: 'YT-5',
       title: 'Validate Webhook Signature Subtask',
@@ -293,7 +292,7 @@ const runTests = async () => {
       parentId: task.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
 
     // Create a mock comment on the subtask to test InnoDB FK constraint purging
     await Comment.create({

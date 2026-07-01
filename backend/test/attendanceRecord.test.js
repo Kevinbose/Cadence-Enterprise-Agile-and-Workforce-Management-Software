@@ -160,4 +160,6 @@ async function runTests() {
   }
 }
 
-runTests();
+runTests().then(() => {
+  process.exit(0);
+});

@@ -45,6 +45,8 @@ const COLUMN_STYLES = {
  *   onReview    — (task, mode) => void
  *   onEdit      — (task) => void
  *   onDelete    — (task) => void
+ *   selectedCardIds — Set<number> of task ids currently selected for bulk adjudication
+ *   onToggleSelect  — (taskId) => void
  *   laneKey     — unique lane identifier for composing droppableId
  */
 const KanbanColumn = ({
@@ -58,6 +60,8 @@ const KanbanColumn = ({
   onReview,
   onEdit,
   onDelete,
+  selectedCardIds,
+  onToggleSelect,
   laneKey,
 }) => {
   const droppableId = `${laneKey}::${columnKey}`;
@@ -109,6 +113,8 @@ const KanbanColumn = ({
                     onReview={onReview}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    isSelected={selectedCardIds?.has(task.id)}
+                    onToggleSelect={onToggleSelect}
                     currentUser={currentUser}
                     isDragging={dragSnapshot.isDragging}
                   />

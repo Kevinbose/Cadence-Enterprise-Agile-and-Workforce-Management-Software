@@ -8,6 +8,7 @@ import {
   getEligibleAssigneesRequest,
   editIssueRequest,
   deleteIssueRequest,
+  bulkAdjudicateRequest,
 } from './kanbanService';
 
 const initialState = {
@@ -109,6 +110,26 @@ export const deleteIssue = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         extractError(error, 'Failed to delete issue')
+      );
+    }
+  }
+);
+
+export const bulkAdjudicate = createAsyncThunk(
+  'kanban/bulkAdjudicate',
+  async ({ taskIds, action, comment }, thunkAPI) => {
+    try {
+      const data = await bulkAdjudicateRequest({ taskIds, action, comment });
+      // A bulk cascade can promote several parents/grandparents to DONE at
+      // once — reshuffling swimlanes in ways that are unsafe to guess at on
+      // the client. Always re-fetch the full board; the DB is the single
+      // source of truth for the post-cascade hierarchy.
+      const sprintId = thunkAPI.getState().kanban.sprint?.id || null;
+      thunkAPI.dispatch(fetchBoard(sprintId));
+      return data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        extractError(error, 'Bulk adjudication failed')
       );
     }
   }
@@ -257,6 +278,21 @@ const kanbanSlice = createSlice({
       .addCase(deleteIssue.rejected, (state, action) => {
         state.isSubmitting = false;
         state.error = action.payload;
+      })
+
+      // ── bulkAdjudicate ──────────────────────────────────────────
+      .addCase(bulkAdjudicate.pending, (state) => {
+        state.isSubmitting = true;
+        state.error = null;
+      })
+      .addCase(bulkAdjudicate.fulfilled, (state) => {
+        state.isSubmitting = false;
+        // flatTasks/boardData refresh via the fetchBoard dispatch inside the thunk.
+      })
+      .addCase(bulkAdjudicate.rejected, (state, action) => {
+        state.isSubmitting = false;
+        state.error = action.payload;
+        toast.error(action.payload || 'Bulk adjudication failed.');
       })
 
       // ── fetchEligibleAssignees ──────────────────────────────────

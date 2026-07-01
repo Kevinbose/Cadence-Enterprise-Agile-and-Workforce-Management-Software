@@ -24,6 +24,7 @@ import CreateIssueModal from '../components/Kanban/CreateIssueModal';
 import EditIssueModal from '../components/Kanban/EditIssueModal';
 import DeleteConfirmationModal from '../components/Kanban/DeleteConfirmationModal';
 import ReviewAdjudicationModal from '../components/Kanban/ReviewAdjudicationModal';
+import BulkActionBar from '../components/Kanban/BulkActionBar';
 import toast from 'react-hot-toast';
 import {
   fetchBoard,
@@ -181,6 +182,7 @@ const KanbanBoard = () => {
   const [editTarget, setEditTarget] = useState(null);   // task object
   const [deleteTarget, setDeleteTarget] = useState(null); // task object
   const [collapsedLanes, setCollapsedLanes] = useState({}); // laneKey -> bool
+  const [selectedCardIds, setSelectedCardIds] = useState(new Set()); // Bulk adjudication selection
 
   const isManager = user?.systemRole === 'Admin/Manager';
   const isElevated = isManager || isTemporalScrumMaster;
@@ -256,6 +258,37 @@ const KanbanBoard = () => {
   const handleReview = (task, mode) => setReviewTarget({ task, mode });
   const handleEdit = useCallback((task) => setEditTarget(task), []);
   const handleDelete = useCallback((task) => setDeleteTarget(task), []);
+
+  // ── Bulk-adjudication selection toggle ─────────────────────────────────────
+  const handleToggleSelect = useCallback((taskId) => {
+    setSelectedCardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleClearSelection = useCallback(() => setSelectedCardIds(new Set()), []);
+
+  // Auto-clear stale selections whenever the board refreshes (e.g. after the
+  // bulk operation moves/cascades cards, some previously-selected ids may no
+  // longer exist in IN_REVIEW/QA_TESTING at all).
+  useEffect(() => {
+    setSelectedCardIds((prev) => {
+      if (prev.size === 0) return prev;
+      const validIds = new Set(
+        flatTasks
+          .filter((t) => t.status === 'IN_REVIEW' || t.status === 'QA_TESTING')
+          .map((t) => t.id)
+      );
+      const cleaned = new Set([...prev].filter((id) => validIds.has(id)));
+      return cleaned.size === prev.size ? prev : cleaned;
+    });
+  }, [flatTasks]);
 
   // ── Drag-and-drop handler ──────────────────────────────────────────────────
   const handleDragEnd = useCallback(
@@ -654,6 +687,8 @@ const KanbanBoard = () => {
                                       onReview={handleReview}
                                       onEdit={handleEdit}
                                       onDelete={handleDelete}
+                                      selectedCardIds={selectedCardIds}
+                                      onToggleSelect={handleToggleSelect}
                                     />
                                   </div>
                                 ))}
@@ -741,6 +776,8 @@ const KanbanBoard = () => {
                                                 onReview={handleReview}
                                                 onEdit={handleEdit}
                                                 onDelete={handleDelete}
+                                                selectedCardIds={selectedCardIds}
+                                                onToggleSelect={handleToggleSelect}
                                               />
                                             </div>
                                           ))}
@@ -821,6 +858,8 @@ const KanbanBoard = () => {
                                                       onReview={handleReview}
                                                       onEdit={handleEdit}
                                                       onDelete={handleDelete}
+                                                      selectedCardIds={selectedCardIds}
+                                                      onToggleSelect={handleToggleSelect}
                                                     />
                                                   </div>
                                                 ))}
@@ -845,6 +884,13 @@ const KanbanBoard = () => {
           </div>
         </DragDropContext>
       </div>
+
+      <BulkActionBar
+        selectedCount={selectedCardIds.size}
+        selectedIds={[...selectedCardIds]}
+        onClear={handleClearSelection}
+        onComplete={handleClearSelection}
+      />
 
       {createOpen && <CreateIssueModal onClose={() => setCreateOpen(false)} />}
       {reviewTarget && (

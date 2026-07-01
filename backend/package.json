@@ -12,7 +12,13 @@
     "test:scrum": "node test/temporalScrum.test.js",
     "test:kanban": "node test/kanban.test.js",
     "test:intelligence": "node test/intelligence.test.js",
-    "test": "npm run test:scrum && npm run test:kanban && npm run test:intelligence"
+    "test:bulk-adjudicate": "node test/bulkAdjudicate.test.js",
+    "test:mutation": "node test/mutation.test.js",
+    "test:cascade": "node test/cascadeVerify.test.js",
+    "test:comments": "node test/comments.test.js",
+    "test:audit": "node test/audit.test.js",
+    "test:attendance": "node test/attendanceRecord.test.js",
+    "test": "npm run test:scrum && npm run test:kanban && npm run test:intelligence && npm run test:bulk-adjudicate && npm run test:mutation && npm run test:cascade && npm run test:comments && npm run test:audit && npm run test:attendance"
   },
   "keywords": [],
   "author": "",

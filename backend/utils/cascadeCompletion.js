@@ -13,9 +13,19 @@ const { Task } = require('../models');
  *
  * @param {number} parentId - The parentId of the task that just changed.
  * @param {number} userId   - The acting user, recorded in the audit trail.
+ * @param {object} [options] - Optional call context.
+ * @param {import('sequelize').Transaction} [options.transaction] - When
+ *   provided, every read/write in this walk is scoped to the caller's
+ *   transaction. This is what makes bulk adjudication deadlock-safe: siblings
+ *   sharing a parent are processed one task at a time inside a single
+ *   transaction, so the parent row is only ever touched sequentially instead
+ *   of by several concurrent connections racing on the same UPDATE.
+ *   Omitting `transaction` preserves the original standalone behaviour used
+ *   by `updateTaskStatus` — fully backward-compatible.
  * @returns {Promise<number[]>} Array of parent task ids that were auto-completed.
  */
-const checkAndCascadeCompletion = async (parentId, userId) => {
+const checkAndCascadeCompletion = async (parentId, userId, options = {}) => {
+  const { transaction } = options;
   const completedParents = [];
 
   let currentParentId = parentId;
@@ -23,6 +33,7 @@ const checkAndCascadeCompletion = async (parentId, userId) => {
   while (currentParentId) {
     const siblings = await Task.findAll({
       where: { parentId: currentParentId },
+      transaction,
     });
 
     // No children → nothing to roll up at this level.
@@ -37,14 +48,14 @@ const checkAndCascadeCompletion = async (parentId, userId) => {
       break;
     }
 
-    const parent = await Task.findByPk(currentParentId);
+    const parent = await Task.findByPk(currentParentId, { transaction });
 
     if (!parent) {
       break;
     }
 
     if (parent.status !== 'DONE') {
-      await parent.update({ status: 'DONE' }, { userId });
+      await parent.update({ status: 'DONE' }, { userId, transaction });
       completedParents.push(parent.id);
     }
 

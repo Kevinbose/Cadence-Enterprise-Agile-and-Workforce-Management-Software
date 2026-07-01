@@ -958,6 +958,193 @@ const deleteIssue = async (req, res, next) => {
   }
 };
 
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /api/v1/tasks/bulk-adjudicate
+// Multi-select bulk Approve / Reject for cards in IN_REVIEW or QA_TESTING.
+//
+// RACE CONDITION SAFETY:
+// If several selected cards share the same parent, updating them concurrently
+// (e.g. via Promise.all) would cause multiple connections to UPDATE the same
+// parent row at nearly the same millisecond — a classic MySQL deadlock, and a
+// window where the parent can fail to roll up to DONE even though every child
+// finished. To eliminate this:
+//   1. The whole operation runs inside ONE sequelize.transaction().
+//   2. taskIds are processed with a sequential `for...of` loop — NEVER
+//      Promise.all — so only one task (and therefore one parent-cascade walk)
+//      is ever being written at a time.
+//   3. Each task row is pulled with a row-level lock (`t.LOCK.UPDATE`) inside
+//      the transaction, serializing any other concurrent bulk request that
+//      might target the same rows.
+//   4. checkAndCascadeCompletion() receives the same transaction object, so
+//      the parent/grandparent rollup for task N fully commits (within the
+//      transaction) before task N+1 is even read — the cascade always sees
+//      the truthful, up-to-date sibling state.
+// ──────────────────────────────────────────────────────────────────────────────
+const bulkAdjudicate = async (req, res, next) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { taskIds, action, comment } = req.body;
+
+    // ── RBAC Guard — strictly Manager or active Scrum Master ─────────────────
+    const manager = isManagerRole(req);
+    const scrumMaster = !manager && isScrumMasterContext(req);
+
+    if (!manager && !scrumMaster) {
+      await t.rollback();
+      return res.status(403).json({
+        success: false,
+        message: 'Only a Scrum Master or Manager may bulk-adjudicate tasks.',
+      });
+    }
+
+    // ── Payload validation ────────────────────────────────────────────────────
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'taskIds must be a non-empty array.',
+      });
+    }
+
+    if (action !== 'APPROVE' && action !== 'REJECT') {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "action must be either 'APPROVE' or 'REJECT'.",
+      });
+    }
+
+    if (action === 'REJECT' && (!comment || !String(comment).trim())) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'A mandatory rejection comment is required for bulk reject.',
+      });
+    }
+
+    const results = [];
+    const skipped = [];
+
+    // ── Sequential processing — CRITICAL: for...of, never Promise.all ───────
+    for (const rawId of taskIds) {
+      const taskId = parseInt(rawId, 10);
+
+      if (Number.isNaN(taskId)) {
+        skipped.push({ taskId: rawId, reason: 'Invalid task id.' });
+        continue;
+      }
+
+      // Row-level lock (SELECT ... FOR UPDATE) — serializes any concurrent
+      // bulk request that might touch this exact row inside the transaction.
+      const task = await Task.findByPk(taskId, {
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+
+      if (!task) {
+        skipped.push({ taskId, reason: 'Task not found.' });
+        continue;
+      }
+
+      // ── Team isolation + sprint lifecycle guard (mirrors updateTaskStatus) ──
+      if (task.sprintId) {
+        const taskSprint = await Sprint.findByPk(task.sprintId, {
+          attributes: ['id', 'status', 'teamId'],
+          transaction: t,
+        });
+
+        if (taskSprint) {
+          if (taskSprint.teamId !== null && taskSprint.teamId !== req.user.teamId) {
+            skipped.push({
+              taskId,
+              issueKey: task.issueKey,
+              reason: "No access to this team's tasks.",
+            });
+            continue;
+          }
+          if (taskSprint.status === 'PENDING' || taskSprint.status === 'COMPLETED') {
+            skipped.push({
+              taskId,
+              issueKey: task.issueKey,
+              reason: 'Sprint is not in an active, movable state.',
+            });
+            continue;
+          }
+        }
+      }
+
+      const fromStatus = task.status;
+
+      if (fromStatus !== 'IN_REVIEW' && fromStatus !== 'QA_TESTING') {
+        skipped.push({
+          taskId,
+          issueKey: task.issueKey,
+          reason: `Task is in ${fromStatus}, not eligible for adjudication.`,
+        });
+        continue;
+      }
+
+      if (action === 'APPROVE') {
+        // REVIEWER_TRANSITIONS[fromStatus] is always a single-entry array:
+        // IN_REVIEW → [QA_TESTING], QA_TESTING → [DONE].
+        const toStatus = REVIEWER_TRANSITIONS[fromStatus][0];
+
+        await task.update({ status: toStatus }, { userId: req.user.id, transaction: t });
+
+        // Trigger the existing hierarchy cascade — transaction-scoped so the
+        // parent/grandparent rollup for THIS task fully resolves before the
+        // next taskId in the loop is even read.
+        if (toStatus === 'DONE' && task.parentId) {
+          await checkAndCascadeCompletion(task.parentId, req.user.id, { transaction: t });
+        }
+
+        results.push({ taskId: task.id, issueKey: task.issueKey, fromStatus, toStatus });
+      } else {
+        // REJECT — always bounces back to IN_PROGRESS (REJECTION_TRANSITIONS).
+        const toStatus = REJECTION_TRANSITIONS[fromStatus];
+
+        await task.update({ status: toStatus }, { userId: req.user.id, transaction: t });
+
+        // Module 6 audit trail — one comment per rejected card, same bulk reason.
+        await Comment.create(
+          {
+            taskId: task.id,
+            authorId: req.user.id,
+            content: `Rejected (bulk): ${String(comment).trim()}`,
+            evaluationTier: EVALUATION_TIER.NEGATIVE_SIMPLE,
+          },
+          { transaction: t }
+        );
+
+        results.push({ taskId: task.id, issueKey: task.issueKey, fromStatus, toStatus });
+      }
+    }
+
+    if (results.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'No eligible tasks were adjudicated.',
+        skipped,
+      });
+    }
+
+    await t.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: `${results.length} task(s) ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully.`,
+      processed: results.length,
+      results,
+      skipped,
+    });
+  } catch (error) {
+    await t.rollback();
+    next(error);
+  }
+};
+
 module.exports = {
   createIssue,
   getSprintBoard,
@@ -965,4 +1152,5 @@ module.exports = {
   rejectTask,
   editIssue,
   deleteIssue,
+  bulkAdjudicate,
 };

@@ -96,7 +96,7 @@ const runCascadeTests = async () => {
       status: 'TODO',
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
 
     const parentTask = await Task.create({
       title: 'Parent Task: Implement Stripe Webhooks',
@@ -105,7 +105,7 @@ const runCascadeTests = async () => {
       parentId: grandparentStory.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
 
     console.log('🏗️ Created parent Task and grandparent Story.');
 
@@ -116,7 +116,7 @@ const runCascadeTests = async () => {
       parentId: parentTask.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
 
     const subtask2 = await Task.create({
       title: 'Subtask 2: Verify signature header',
@@ -125,7 +125,7 @@ const runCascadeTests = async () => {
       parentId: parentTask.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
 
     const subtask3 = await Task.create({
       title: 'Subtask 3: Log webhook event to DB',
@@ -134,7 +134,7 @@ const runCascadeTests = async () => {
       parentId: parentTask.id,
       creatorId: scrumMaster.id,
       sprintId: activeSprint.id,
-    });
+    }, { userId: scrumMaster.id });
 
     console.log('📑 Created 3 Subtasks under the parent Task, initial status: QA_TESTING.');
 

@@ -38,11 +38,23 @@ const run = async () => {
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     console.log('🏗️ Database tables created successfully.');
 
-    // ── 2. Create Managers & Scrum Masters ────────────────────────────────────
-    console.log('👥 Seeding managers and scrum masters...');
+    // ── 2. Create Super Admin, Managers & Scrum Masters ───────────────────────
+    console.log('👥 Seeding system roles (Admin, managers, scrum masters)...');
+    const hashedAdminPassword = await bcrypt.hash('Y@kk@Y@123$', 10);
     const hashedManagerPassword = await bcrypt.hash('Manager@123', 10);
     const hashedScrumPassword = await bcrypt.hash('Scrum@123', 10);
     const hashedEmployeePassword = await bcrypt.hash('Employee@123', 10);
+
+    // IT Administrator (SuperAdmin)
+    await User.create({
+      employeeId: 'YT-ADMIN-001',
+      name: 'IT Administrator',
+      email: 'Yakkay_Admin@yakkaytech.com',
+      passwordHash: hashedAdminPassword,
+      systemRole: 'SuperAdmin',
+      teamId: null,
+      jobTitle: 'IT System Architect',
+    });
 
     // Managers (Team 1 and Team 2)
     const manager1 = await User.create({

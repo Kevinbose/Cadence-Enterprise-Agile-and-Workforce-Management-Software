@@ -30,8 +30,9 @@ const AccessDenied = () => (
 
 const ProtectedWrapper = ({ children, allowedRoles = null, requireScrumMaster = false }) => {
   const { isAuthenticated, isLoading, user } = useSelector((state) => state.auth);
+  const hasLocalToken = !!localStorage.getItem('token');
 
-  if (isLoading) {
+  if (isLoading || (hasLocalToken && !user)) {
     return <Spinner />;
   }
 

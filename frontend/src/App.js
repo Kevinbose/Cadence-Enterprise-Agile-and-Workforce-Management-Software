@@ -17,15 +17,16 @@ import Profile from './pages/Profile';
 
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
-  const { token, user, isLoading } = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state) => state.auth);
+  const hasLocalToken = !!localStorage.getItem('token');
 
   useEffect(() => {
-    if (token && !user) {
+    if ((token || hasLocalToken) && !user) {
       dispatch(fetchCurrentUser());
     }
-  }, [dispatch, token, user]);
+  }, [dispatch, token, user, hasLocalToken]);
 
-  if (token && !user && isLoading) {
+  if ((token || hasLocalToken) && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F4F5F7]">
         <div
